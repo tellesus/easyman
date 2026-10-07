@@ -60,4 +60,3 @@ The random workspace key remains on the client. Property Settings → Backups & 
 - `.openai/hosting.json`: private Site identity and storage binding.
 
 The Windows author's runtime and package-manager compatibility shim are ignored under `.sites-runtime/` and never deployed. The standard starter scripts remain portable.
-
