@@ -1,0 +1,1 @@
+ALTER TABLE `encrypted_resources` ADD `aad` integer DEFAULT 0 NOT NULL;

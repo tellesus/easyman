@@ -1,0 +1,2 @@
+import { user,session,response,sameOrigin,endpoint,body,rate } from '../../team-server';
+export async function POST(request:Request){return endpoint(async()=>{sameOrigin(request);const u=await user(),data=await body(request,1000);await rate(u.userId,'session-reset',5);const headers=new Headers(request.headers);headers.delete('cookie');const created=await session(new Request(request.url,{headers}),u,String(data.propertyId||u.userId),true);return response({ok:true},200,{'Set-Cookie':created.cookie});});}

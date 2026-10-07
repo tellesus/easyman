@@ -2,8 +2,8 @@ const encoder=new TextEncoder();const decoder=new TextDecoder();
 const b64=(bytes:Uint8Array)=>{let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s);};
 const unb64=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 export type Envelope={ciphertext:string;iv:string};
-export async function encrypt(data:unknown,key:CryptoKey):Promise<Envelope> {const iv=crypto.getRandomValues(new Uint8Array(12));const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,encoder.encode(JSON.stringify(data)));return {iv:b64(iv),ciphertext:b64(new Uint8Array(ciphertext))};}
-export async function decrypt<T>(data:Envelope,key:CryptoKey):Promise<T> {return JSON.parse(decoder.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(data.iv)},key,unb64(data.ciphertext))));}
+export async function encrypt(data:unknown,key:CryptoKey,aad?:string):Promise<Envelope> {const iv=crypto.getRandomValues(new Uint8Array(12));const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv,...(aad?{additionalData:encoder.encode(aad)}:{})},key,encoder.encode(JSON.stringify(data)));return {iv:b64(iv),ciphertext:b64(new Uint8Array(ciphertext))};}
+export async function decrypt<T>(data:Envelope,key:CryptoKey,aad?:string):Promise<T> {return JSON.parse(decoder.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(data.iv),...(aad?{additionalData:encoder.encode(aad)}:{})},key,unb64(data.ciphertext))));}
 export async function createKey(){return crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);}
 export async function keyText(key:CryptoKey){return b64(new Uint8Array(await crypto.subtle.exportKey('raw',key)));}
 export async function importKey(text:string){return crypto.subtle.importKey('raw',unb64(text.trim()),'AES-GCM',true,['encrypt','decrypt']);}

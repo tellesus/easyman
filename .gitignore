@@ -44,3 +44,7 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Generated compiler state and unrelated local artwork
+*.tsbuildinfo
+/ChatGPT Image*.png

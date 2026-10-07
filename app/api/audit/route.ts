@@ -1,18 +1,3 @@
-import { env } from 'cloudflare:workers';
-import { getChatGPTUser } from '../../chatgpt-auth';
-export async function GET() {
-  const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: 'Sign in required.' }, { status: 401 });
-  const rows = await env.DB!.prepare('SELECT id, action, timestamp FROM audit_events WHERE owner = ? ORDER BY timestamp DESC LIMIT 200').bind(user.userId).all();
-  return Response.json(rows.results, { headers: { 'Cache-Control': 'no-store' } });
-}
-export async function POST(request: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: 'Sign in required.' }, { status: 401 });
-  if (request.headers.get('origin') !== new URL(request.url).origin) return Response.json({ error: 'Invalid origin.' }, { status: 403 });
-  const { action } = await request.json() as { action: string };
-  if (!['configuration.export.encrypted', 'configuration.export.plaintext', 'configuration.restored', 'schedule.published', 'shift.snapshot'].includes(action)) return Response.json({ error: 'Invalid event.' }, { status: 400 });
-  const event = { id: crypto.randomUUID(), action, timestamp: new Date().toISOString() };
-  await env.DB!.prepare('INSERT INTO audit_events (id, owner, action, timestamp) VALUES (?, ?, ?, ?)').bind(event.id, user.userId, event.action, event.timestamp).run();
-  return Response.json(event);
-}
+import { db,response,user,session,member,property,requirePermit,endpoint,sameOrigin,body,rate } from '../../team-server';
+export async function GET(request:Request){return endpoint(async()=>{const u=await user(),id=new URL(request.url).searchParams.get('property')||u.userId;const p=await db().prepare('SELECT id FROM properties WHERE id=?').bind(id).first();if(p){await session(request,u,id);const propertyRow=await property(id);requirePermit(await member(id,u.userId),'Security.ViewAudit','',propertyRow);}else if(id!==u.userId)return response({error:'Not authorized.'},403);const rows=await db().prepare('SELECT id,action,timestamp FROM audit_events WHERE owner=? ORDER BY timestamp DESC LIMIT 200').bind(id).all();return response(rows.results);});}
+export async function POST(request:Request){return endpoint(async()=>{sameOrigin(request);const u=await user(),data=await body(request,4000),id=String(data.propertyId||u.userId);await rate(u.userId,'audit',60);const allowed:Record<string,string>={'configuration.export.encrypted':'Property.Configure','configuration.export.plaintext':'Property.Configure','configuration.restored':'Property.Configure','schedule.published':'Scheduling.Publish','shift.snapshot':'ShiftLog.Handoff','workspace.export.encrypted':'OperationalData.Export','account.recovery.export':'Account.Self'};if(!Object.hasOwn(allowed,data.action))return response({error:'Invalid event.'},400);const p=await db().prepare('SELECT * FROM properties WHERE id=?').bind(id).first<any>();if(p){await session(request,u,id);const m=await member(id,u.userId);if(allowed[data.action]!=='Account.Self'&&!m.grants.some(g=>g.capability==='*'||g.capability===allowed[data.action]))return response({error:'Not authorized.'},403);}else if(id!==u.userId)return response({error:'Not authorized.'},403);const event={id:crypto.randomUUID(),action:data.action+':'+u.userId,timestamp:new Date().toISOString()};await db().prepare('INSERT INTO audit_events (id,owner,action,timestamp) VALUES (?,?,?,?)').bind(event.id,id,event.action,event.timestamp).run();return response(event);});}

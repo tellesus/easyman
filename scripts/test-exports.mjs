@@ -3,12 +3,13 @@ import { test } from 'node:test';
 import { registerHooks } from 'node:module';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
-import { seed, days } from '../app/domain.ts';
+
 
 // The production bundler resolves this extensionless import; Node's TS runner needs the extension.
 registerHooks({ resolve(specifier, context, nextResolve) {
-  return nextResolve(specifier === './domain' && context.parentURL?.endsWith('/spreadsheet-export.ts') ? './domain.ts' : specifier, context);
+  return nextResolve(specifier === './domain' && context.parentURL?.endsWith('/spreadsheet-export.ts') ? './domain.ts' : specifier==='./time'&&context.parentURL?.endsWith('/domain.ts')?'./time.ts':specifier, context);
 } });
+const {seed,days}=await import('../app/domain.ts');
 const { buildScheduleExport, buildRoomBoardExport } = await import('../app/spreadsheet-export.ts');
 const generatedAt = new Date('2026-10-07T01:00:00Z');
 async function open(result) {
