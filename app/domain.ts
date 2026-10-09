@@ -68,9 +68,38 @@ export function generateSchedule(state:State,selectedDates=days(state.week)) {
   // Repair isolated gaps by moving an earlier assignment to another qualified employee.
   // This improves coverage without weakening availability, overlap, rest or hour limits.
   for(const date of selectedDates)for(const rule of state.config.staffing.filter(r=>staffingApplies(r,date,state.config))){const shift=state.config.shifts.find(s=>s.id===rule.shift);if(!shift)continue;let filled=assignments.filter(a=>a.date===date&&a.shift===rule.shift&&a.position===rule.position).length;while(filled<rule.count){let repaired=false;for(const employee of state.employees){if(assignmentError(state,employee,date,shift,rule.position,[...fixed,...assignments]))continue;for(const moved of assignments.filter(a=>a.employee===employee.id)){const movedShift=state.config.shifts.find(sh=>sh.id===moved.shift)!;if((hours[employee.id]||0)-movedShift.hours+shift.hours>Number(employee.maxHours??state.config.maxWeeklyHours??40))continue;const remaining=[...fixed,...assignments.filter(a=>a.id!==moved.id)];const replacement=state.employees.find(e=>e.id!==employee.id&&(hours[e.id]||0)+movedShift.hours<=Number(e.maxHours??state.config.maxWeeklyHours??40)&&!assignmentError(state,e,moved.date,movedShift,moved.position,remaining));if(!replacement)continue;moved.employee=replacement.id;hours[replacement.id]=(hours[replacement.id]||0)+movedShift.hours;hours[employee.id]=(hours[employee.id]||0)-movedShift.hours+shift.hours;assignments.push({id:uid(),employee:employee.id,position:rule.position,date,shift:shift.id});repaired=true;break;}if(repaired)break;}if(!repaired)break;filled++;}}
+  keepDaysOffTogether(state, fixed, assignments);
   const finalWarnings:string[]=[];for(const date of selectedDates)for(const r of state.config.staffing.filter(r=>staffingApplies(r,date,state.config))){const filled=assignments.filter(a=>a.date===date&&a.position===r.position&&a.shift===r.shift).length;if(filled<r.count)finalWarnings.push(`${date}: ${r.count-filled} unfilled ${state.config.shifts.find(sh=>sh.id===r.shift)?.name||r.shift} shifts.`);}
   const preferred=assignments.filter(a=>state.employees.find(e=>e.id===a.employee)?.preferred===a.shift).length;
   return {assignments,warnings:finalWarnings,coverage:required?Math.round(assignments.length/required*100):100,preferenceSatisfaction:assignments.length?Math.round(preferred/assignments.length*100):100,hourWarnings:state.employees.filter(e=>e.active!==false&&(hours[e.id]||0)<Number(e.hours||0)&&state.config.staffing.some(r=>(e.qualifications||[e.position]).includes(r.position))).map(e=>`${e.name}: ${hours[e.id]||0} of ${e.hours} preferred hours.`)};
+}
+// Swap generated assignments only: coverage, weekly hours and fixed days stay intact.
+// Split-day consent removes this employee's penalty, without forcing split days off.
+function keepDaysOffTogether(state:State, fixed:Row[], assignments:Row[]) {
+  const week=days(state.week), employees=new Map(state.employees.map(e=>[e.id,e]));
+  const isolatedDays=(employee:Row, rows:Row[])=>{
+    if(employee.splitDaysOffOK===true)return 0;
+    const worked=new Set(rows.filter(a=>a.employee===employee.id).map(a=>a.date));
+    const off=week.map(date=>!worked.has(date));
+    if(off.filter(Boolean).length<2)return 0;
+    return off.filter((value,i)=>value&&!off[i-1]&&!off[i+1]).length;
+  };
+  for(let pass=0;pass<assignments.length;pass++) {
+    const all=[...fixed,...assignments];let improved=false;
+    for(let i=0;i<assignments.length&&!improved;i++)for(let j=i+1;j<assignments.length;j++) {
+      const a=assignments[i],b=assignments[j];
+      if(a.employee===b.employee||a.date===b.date)continue;
+      const first=employees.get(a.employee),second=employees.get(b.employee);
+      const firstShift=state.config.shifts.find(s=>s.id===a.shift),secondShift=state.config.shifts.find(s=>s.id===b.shift);
+      if(!first||!second||!firstShift||!secondShift||firstShift.hours!==secondShift.hours)continue;
+      const swapped=all.map(row=>row.id===a.id?{...row,employee:b.employee}:row.id===b.id?{...row,employee:a.employee}:row);
+      const before=isolatedDays(first,all)+isolatedDays(second,all),after=isolatedDays(first,swapped)+isolatedDays(second,swapped);
+      if(after>=before)continue;
+      if(assignmentError(state,second,a.date,firstShift,a.position,swapped,a.id)||assignmentError(state,first,b.date,secondShift,b.position,swapped,b.id))continue;
+      [a.employee,b.employee]=[b.employee,a.employee];improved=true;break;
+    }
+    if(!improved)break;
+  }
 }
 export function balanceBoard(state:State):Row[] {
   const attendants=state.employees.filter(e=>e.active!==false&&(e.qualifications||[e.position]).includes(state.config.boardPosition));
@@ -84,7 +113,7 @@ export function balanceBoard(state:State):Row[] {
   return [...result,...dormant];
 }
 export const importTypes:Record<string,{key:keyof State|keyof Configuration,config?:boolean,required:string[],example:Record<string,unknown>}>= {
-  employees:{key:'employees',required:['id','name','department','position'],example:{id:'EMP-014',name:'Jamie Chen',department:'fo',position:'agent',qualifications:['agent'],hire:'2024-01-01',hours:40,active:true}},
+  employees:{key:'employees',required:['id','name','department','position'],example:{id:'EMP-014',name:'Jamie Chen',department:'fo',position:'agent',qualifications:['agent'],hire:'2024-01-01',hours:40,splitDaysOffOK:false,active:true}},
   departments:{key:'departments',config:true,required:['id','name'],example:{id:'fo',name:'Front Office'}},positions:{key:'positions',config:true,required:['id','name','department'],example:{id:'agent',name:'Guest Service Agent',department:'fo'}},
   rooms:{key:'rooms',required:['id','number','type','floor','score'],example:{id:'ROOM-201',number:'201',type:'king',floor:2,score:1,flag:'Departure'}},
   roomTypes:{key:'roomTypes',config:true,required:['id','name','score'],example:{id:'king',name:'Classic King',score:1}},
@@ -94,14 +123,14 @@ export const importTypes:Record<string,{key:keyof State|keyof Configuration,conf
   staffing:{key:'staffing',config:true,required:['id','position','shift','count'],example:{id:'REQ-014',position:'agent',shift:'am',count:2}},
 };
 export function validateImport(type:string,input:unknown,state:State):Row[] {
-  const allowed:Record<string,string[]>={employees:['id','name','department','departments','position','qualifications','hire','hours','maxHours','preferred','preferredWeekdays','active'],departments:['id','name','active'],positions:['id','name','department','active'],rooms:['id','number','type','floor','zone','score','flag','active'],roomTypes:['id','name','score','active'],reporting:['id','employee','targetType','target'],availability:['id','employee','date','shift','position','weekdays','from','to','reason'],shifts:['id','name','start','end','hours','active'],staffing:['id','position','shift','count','weekdays','from','to','active']};
+  const allowed:Record<string,string[]>={employees:['id','name','department','departments','position','qualifications','hire','hours','maxHours','preferred','preferredWeekdays','splitDaysOffOK','active'],departments:['id','name','active'],positions:['id','name','department','active'],rooms:['id','number','type','floor','zone','score','flag','active'],roomTypes:['id','name','score','active'],reporting:['id','employee','targetType','target'],availability:['id','employee','date','shift','position','weekdays','from','to','reason'],shifts:['id','name','start','end','hours','active'],staffing:['id','position','shift','count','weekdays','from','to','active']};
   const schema=importTypes[type];if(!schema)throw new Error('Unknown import type.');if(!Array.isArray(input)||!input.length)throw new Error('Supply a non-empty JSON array.');if(input.length>5000)throw new Error('Import up to 5,000 records at a time.');const ids=new Set<string>();
   for(const [i,r] of input.entries()){if(r&&typeof r==='object'&&Object.keys(r).some(k=>!allowed[type].includes(k)))throw new Error(`Record ${i+1}: unknown field. Use only the published import schema.`);if(Object.keys(r||{}).length>50||Object.keys(r||{}).some(k=>['__proto__','constructor','prototype'].includes(k)))throw new Error('Unexpected import fields.');if(!r||typeof r!=='object'||Array.isArray(r))throw new Error(`Record ${i+1} must be an object.`);for(const field of schema.required){if(r[field]===undefined||r[field]===null||r[field]==='')throw new Error(`Record ${i+1}: ${field} is required.`);}if(typeof r.id!=='string'||ids.has(r.id))throw new Error(`Record ${i+1}: use a unique text ID.`);ids.add(r.id);
     for(const f of ['name','number','department','position','type','employee','targetType','target','shift','date','start','end'])if(r[f]!==undefined&&typeof r[f]!=='string')throw new Error(`Record ${i+1}: ${f} must be text.`);
     for(const f of ['score','floor','hours','maxHours','count'])if(r[f]!==undefined&&(typeof r[f]!=='number'||!Number.isFinite(r[f])||r[f]<0))throw new Error(`Record ${i+1}: ${f} must be a non-negative number.`);
     if(Object.values(r).some(v=>typeof v==='string'&&v.length>2000))throw new Error(`Record ${i+1}: text is too long.`);
     if(r.qualifications!==undefined&&(!Array.isArray(r.qualifications)||r.qualifications.some((q:unknown)=>typeof q!=='string')))throw new Error(`Record ${i+1}: qualifications must be an array of position IDs.`);
-    if(r.active!==undefined&&typeof r.active!=='boolean')throw new Error(`Record ${i+1}: active must be true or false.`);
+    for(const field of ['active','splitDaysOffOK'])if(r[field]!==undefined&&typeof r[field]!=='boolean')throw new Error(`Record ${i+1}: ${field} must be true or false.`);
     for(const f of ['start','end'])if(r[f]!==undefined&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(r[f]))throw new Error(`Record ${i+1}: ${f} must use HH:MM.`);
     if(r.date!==undefined&&!validCalendarDate(r.date))throw new Error(`Record ${i+1}: date must use YYYY-MM-DD.`);
     for(const field of ['hire','from','to'])if(r[field]&&!validCalendarDate(r[field]))throw new Error(`Record ${i+1}: invalid ${field} date.`);if(r.from&&r.to&&r.from>r.to)throw new Error(`Record ${i+1}: date range is reversed.`);if(r.weekdays!==undefined&&(!Array.isArray(r.weekdays)||r.weekdays.some((d:unknown)=>!Number.isInteger(d)||Number(d)<0||Number(d)>6)))throw new Error(`Record ${i+1}: weekdays must be numbers from 0 (Sunday) to 6 (Saturday).`);if(type==='availability'&&!r.date&&!r.weekdays?.length&&!(r.from&&r.to))throw new Error(`Record ${i+1}: provide a date, weekdays, or date range.`);if(r.departments!==undefined&&(!Array.isArray(r.departments)||r.departments.some((d:string)=>!state.config.departments.some(x=>x.id===d))))throw new Error(`Record ${i+1}: unknown department affiliation.`);

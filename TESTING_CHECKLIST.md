@@ -95,3 +95,9 @@ For each failure, record: check ID, steps, expected result, observed result, pro
 | | | |
 | | | |
 | | | |
+
+## Schedule days-off preferences
+
+- [ ] **S08 — Employee file:** Click an employee name in the desktop or narrow-screen schedule. Expect the matching employee file, then use Edit employee to reach the split-days-off checkbox without leaving the schedule.
+- [ ] **S09 — Consent and persistence:** Leave “OK with split days off” unchecked, save and reload. Expect “Try to keep days off together.” Check it, save and reload; expect “OK with split days off.” Changing the preference does not alter existing assignments.
+- [ ] **S10 — Draft generation:** Regenerate with suitable fictional staffing and availability. Expect the builder to favor consecutive days off for employees without consent while keeping coverage, qualification, rest and hour checks. Consenting employees may receive consecutive or split days off. Hard restrictions can still require split days off. Re-test partial generation to confirm untouched days stay fixed.

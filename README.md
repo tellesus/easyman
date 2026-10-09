@@ -37,6 +37,8 @@ node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1
 
 ## Spreadsheet exports
 
+Generated drafts favor consecutive days off while keeping coverage and hard constraints. Click an employee name in Scheduling to open their file; **Edit employee → OK with split days off** removes that preference for that employee. It defaults to unchecked for new and existing profiles and affects the next generation, not existing assignments.
+
 In Scheduling, select the week and use **Export schedule**. The `.xlsx` workbook contains a weekly matrix and a filterable shift table, including overnight end dates and scheduled-hour totals. Draft and published schedules are labeled as shown in the app.
 
 In Housekeeping, use **Export room board**. The `.xlsx` workbook contains an attendant workload summary and the current room assignments, including room flags, cleaning status, locked assignments, fractional points, and unassigned/DND rooms. Room numbers remain text so leading zeros are preserved.
