@@ -1,6 +1,6 @@
 # EasyMan 0.2 development release
 
-The remaining V1 application work is implemented as a development build. The final **1.0 release is held** pending the private feedback repository and GitHub App configuration requested by the owner. This document distinguishes implementation from infrastructure setup and validation.
+The remaining V1 application work is implemented as a development build. The final **1.0 release is held** pending GitHub App configuration and acceptance checks. The owner supplied the private feedback repository on October 9, 2026; its destination is configured. This document distinguishes implementation from infrastructure setup and validation.
 
 ## Implemented workflows
 
@@ -45,7 +45,7 @@ The snapshot service reconstructs pass-on state at a configured boundary from cu
 
 ## Deployment/setup still required before 1.0
 
-1. Owner-provided private feedback repository and GitHub App server secrets (`GITHUB_APP_CLIENT_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_INSTALLATION_ID`, `GITHUB_FEEDBACK_REPOSITORY`). Verify real submission/retry against that private repository. The public source repository must not receive hotel feedback automatically.
+1. The private repository `tellesus/easyman-feedback` is verified and configured as the hosted destination. Create/install the GitHub App and configure `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_PRIVATE_KEY`, and `GITHUB_INSTALLATION_ID` following [FEEDBACK_SETUP.md](FEEDBACK_SETUP.md). Verify real submission/retry against that private repository. The public source repository must not receive hotel feedback automatically.
 2. Connect the generated private EasyMan connector; verify an authenticated capture call, create the linked background schedule, and verify a fresh unattended run.
 3. Invite actual test-property users through approved channels and grant them access to the private Site as well as the property. App membership does not modify the hosting platform's audience. No real users have been invited or granted access by this development task.
 4. Export and safely retain an account recovery file before moving devices. Verify administrator-assisted recovery with actual test-property accounts. No encryption key can erase plaintext or keys a previously authorized user has already copied.
@@ -55,4 +55,4 @@ The snapshot service reconstructs pass-on state at a configured boundary from cu
 
 TypeScript and production build checks run before publication. Automated tests cover constraints and partial regeneration; hard overnight unavailability; calendar/import failures; locks, DND and configured qualifications; reporting cycles; capability/scope checks; recipient-specific keys; associated-data tampering; recovery-file passphrases; workbook privacy and interoperability structure; and actual API handlers using an isolated SQLite database and a simulated trusted platform-auth boundary. API checks cover denied scope, key recipients, CSRF, stale revisions, revoked sessions and disabled membership. Snapshot tests verify exact historical boundary state and idempotency. A real local preview separately rejects spoofed authentication headers.
 
-Browser QA verifies legacy migration, existing housekeeping progress, encrypted saves/reloads, team/session review, scoped navigation controls, and partial regeneration. GitHub CI is configured to run type checks, tests and the production build. External feedback and unattended connector execution must be validated after their owner setup.
+Browser QA verifies legacy migration, existing housekeeping progress, encrypted saves/reloads, team/session review, scoped navigation controls, and partial regeneration. Feedback handler tests verify GitHub App JWT signatures, repository-limited tokens, all three category labels, public/archived/disabled-issues rejection, bounded input, account ownership, rate limits, concurrent deduplication, safe retries and ambiguous-submission blocking. GitHub CI is configured to run type checks, tests and the production build. External feedback and unattended connector execution must be validated after their owner setup.
