@@ -16,9 +16,9 @@ class Statement{constructor(query,params=[]){this.query=query;this.params=params
 globalThis.__easymanHeaders=new AsyncLocalStorage();
 globalThis.__easymanDb={prepare:q=>new Statement(q),batch:async statements=>{sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}};
 const out=path.resolve('.sites-runtime/api-tests');mkdirSync(out,{recursive:true});
-const names=['team-workspace','team','keys','recovery','session-reset','snapshots'];const routes={};
-for(const name of names){const file=path.join(out,name+'.mjs');await build({entryPoints:['app/api/'+name+'/route.ts'],outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-platform-boundary',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return globalThis.__easymanHeaders.getStore()||new Headers();}':'export function redirect(){throw new Error("Redirect in API test");}'}));}}]});routes[name]=await import(pathToFileURL(file));}
-const snapshotFile=path.join(out,'snapshot-service.mjs');await build({entryPoints:['app/snapshot-server.ts'],outfile:snapshotFile,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-snapshot-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){}'}));}}]});const {captureDueSnapshots}=await import(pathToFileURL(snapshotFile));
+const names=['team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','mcp'];const routes={};
+for(const name of names){const file=path.join(out,name+'.mjs');await build({entryPoints:[name==='mcp'?'app/mcp/route.ts':'app/api/'+name+'/route.ts'],outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-platform-boundary',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return globalThis.__easymanHeaders.getStore()||new Headers();}':'export function redirect(){throw new Error("Redirect in API test");}'}));}}]});routes[name]=await import(pathToFileURL(file));}
+const snapshotFile=path.join(out,'snapshot-service.mjs');await build({entryPoints:['app/snapshot-server.ts'],outfile:snapshotFile,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-snapshot-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){}'}));}}]});const {captureDueSnapshots,propertySnapshotStatus}=await import(pathToFileURL(snapshotFile));
 const cookies=new Map();
 async function call(actor,route,method='GET',data,query=''){
   const headers=new Headers({'Origin':'https://easyman.test','Content-Type':'application/json'});
@@ -71,4 +71,37 @@ test('unattended snapshots reconstruct the exact encrypted boundary state and re
   const items=JSON.parse(snapshot.data);assert.equal(items.length,1);assert.equal((await openResource(items[0],identity,'snapshot-owner')).status,'Open');
   assert.equal((await captureDueSnapshots('snapshot-owner',new Date('2026-10-07T12:06:00.000Z'))).captured,0);
   assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM shift_snapshots WHERE property='snapshot-property'").get().n,1);
+});
+
+
+test('background checks leave a private read-only receipt even when no new boundary is due',async()=>{
+  const before=await propertySnapshotStatus('snapshot-property');assert.equal(before.lastBackgroundRun,null);
+  await captureDueSnapshots('snapshot-owner',new Date('2026-10-07T12:07:00.000Z'),'background');
+  const after=await propertySnapshotStatus('snapshot-property');assert.equal(after.total,1);assert.equal(after.lastBackgroundRun.captured,0);assert.ok(after.lastBackgroundRun.at);
+  const count=sql.prepare("SELECT COUNT(*) AS n FROM audit_events WHERE owner='snapshot-property'").get().n;
+  await propertySnapshotStatus('snapshot-property');assert.equal(sql.prepare("SELECT COUNT(*) AS n FROM audit_events WHERE owner='snapshot-property'").get().n,count);
+  assert.doesNotMatch(JSON.stringify(after),/Before handover|ciphertext|wrapped/);
+});
+
+test('MCP discovery and capture/status operations enforce caller ownership and reject supplied owner arguments',async()=>{
+  const discover=await call(null,'mcp','POST',{jsonrpc:'2.0',id:1,method:'server/discover'});assert.deepEqual(discover.value.result.supportedVersions,['2026-07-28']);
+  const list=await call(null,'mcp','POST',{jsonrpc:'2.0',id:2,method:'tools/list'});assert.deepEqual(list.value.result.tools.map(t=>t.name),['capture_shift_snapshots','snapshot_status']);
+  const request={jsonrpc:'2.0',id:3,method:'tools/call',params:{name:'snapshot_status',arguments:{}}};
+  assert.equal((await call(null,'mcp','POST',request)).status,401);
+  const denied=await call('stranger','mcp','POST',request);assert.deepEqual(denied.value.result.structuredContent.properties,[]);
+  const owner=await call('owner','mcp','POST',request);assert.equal(owner.value.result.structuredContent.properties.length,1);assert.equal(owner.value.result.structuredContent.properties[0].propertyId,'owner');
+  assert.equal((await call('stranger','mcp','POST',{...request,params:{name:'capture_shift_snapshots',arguments:{owner:'owner'}}})).value.result.isError,true);
+  const run=await call('snapshot-owner','mcp','POST',{...request,params:{name:'capture_shift_snapshots',arguments:{}}});assert.equal(run.status,200);assert.equal(run.value.result.isError,undefined);
+  assert.equal((await call('owner','snapshot-status','GET',undefined,'?property=owner')).status,200);
+  assert.notEqual((await call('stranger','snapshot-status','GET',undefined,'?property=owner')).status,200);
+});
+
+test('snapshot catch-up advances in bounded batches, ignores duplicate times and keeps one snapshot per boundary',async()=>{
+  sql.prepare("INSERT INTO properties (id,owner,directory,timezone,boundaries,created_at) VALUES (?,?,?,?,?,?)").run('catchup-property','catchup-owner','{"employees":[],"reporting":[]}','America/Chicago','["07:00","07:00"]','2026-07-01T05:00:00.000Z');
+  const now=new Date('2026-09-02T00:00:00.000Z');
+  assert.equal((await captureDueSnapshots('catchup-owner',now)).captured,31);
+  assert.equal((await captureDueSnapshots('catchup-owner',now)).captured,30);
+  assert.equal((await captureDueSnapshots('catchup-owner',now)).captured,2);
+  assert.equal((await captureDueSnapshots('catchup-owner',now)).captured,0);
+  const count=sql.prepare("SELECT COUNT(*) AS n FROM shift_snapshots WHERE property='catchup-property'").get().n;assert.equal(count,63);
 });

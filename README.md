@@ -53,7 +53,7 @@ Records use separate browser-generated keys wrapped to approved account keys. Ac
 
 ## Background snapshots
 
-The owner-authenticated `/mcp` endpoint exposes `capture_shift_snapshots`. Connect the generated private Site connector and configure its background task to capture while browsers are closed. The server copies historical encrypted pass-on state at each boundary without decrypting hotel contents. Browser polling alone does not provide unattended execution.
+The owner-authenticated `/mcp` endpoint exposes `capture_shift_snapshots` and the read-only `snapshot_status`. The linked hourly task checks for due boundaries while browsers are closed. Every completed background check records a metadata-only receipt, including zero-capture checks. Shift pass-on → Snapshots shows the last background check independently of browser capture. The server preserves historical encrypted state at exact boundaries without decrypting hotel contents. See TESTING_CHECKLIST.md for single-computer acceptance checks.
 
 ## Project structure
 
@@ -67,4 +67,4 @@ The owner-authenticated `/mcp` endpoint exposes `capture_shift_snapshots`. Conne
 
 The Windows author's runtime and package-manager compatibility shim are ignored under `.sites-runtime/` and never deployed. The standard starter scripts remain portable.
 
-The 1.0 release is held until the owner provides the private feedback destination and its GitHub App secrets. No 1.0 tag or release is created by this development build.
+Private GitHub feedback is configured and live-tested. Build 0.2 remains a development release while acceptance checks are recorded in TESTING_CHECKLIST.md. Checks needing other accounts or hardware are explicitly deferred. No 1.0 tag or release is created by this development build.
