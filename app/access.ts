@@ -7,6 +7,7 @@ export type Resource = { id: string; propertyId?:string; aadVersion?:number; fie
 export const fields: Record<string,{read:string;write:string}> = {
   config:{read:'Property.View',write:'Property.Configure'},employees:{read:'Employees.View',write:'Employees.Manage'},rooms:{read:'Rooms.View',write:'Property.Configure'},reporting:{read:'Employees.View',write:'Property.Configure'},
   passon:{read:'ShiftLog.View',write:'ShiftLog.Edit'},checks:{read:'RoomChecks.View',write:'RoomChecks.Perform'},boards:{read:'HousekeepingBoards.View',write:'HousekeepingBoards.Assign'},
+  housekeepingDays:{read:'HousekeepingBoards.View',write:'HousekeepingBoards.Assign'},
   schedule:{read:'Scheduling.View',write:'Scheduling.Edit'},availability:{read:'Availability.View',write:'Scheduling.Edit'},preferences:{read:'Availability.View',write:'Scheduling.Edit'},employeePrivate:{read:'Employees.PrivateView',write:'Employees.Manage'},
   training:{read:'Training.View',write:'Training.Edit'},discipline:{read:'Discipline.View',write:'Discipline.Edit'},publication:{read:'Scheduling.View',write:'Scheduling.Publish'},
   snapshots:{read:'ShiftLog.ViewArchive',write:'ShiftLog.Handoff'},scheduleArchives:{read:'Scheduling.View',write:'Scheduling.Publish'},activity:{read:'ShiftLog.View',write:'ShiftLog.Create'},feedback:{read:'Feedback.Self',write:'Feedback.Self'},

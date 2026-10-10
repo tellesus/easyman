@@ -1,0 +1,15 @@
+{
+  "format": "easyman-housekeeping-day-v1",
+  "date": "2026-10-10",
+  "rooms": [
+    {"roomNumber": "201", "service": "departure"},
+    {"roomNumber": "202", "service": "departure"},
+    {"roomNumber": "203", "service": "stayover"},
+    {"roomNumber": "204", "service": "stayover"},
+    {"roomNumber": "301", "service": "departure"},
+    {"roomNumber": "302", "service": "stayover"}
+  ],
+  "unmatched": [
+    {"roomNumber": "999", "service": "departure", "reason": "Room not found in the supplied catalog; operator review required."}
+  ]
+}

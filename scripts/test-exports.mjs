@@ -7,10 +7,11 @@ import JSZip from 'jszip';
 
 // The production bundler resolves this extensionless import; Node's TS runner needs the extension.
 registerHooks({ resolve(specifier, context, nextResolve) {
-  return nextResolve(specifier === './domain' && context.parentURL?.endsWith('/spreadsheet-export.ts') ? './domain.ts' : specifier==='./time'&&context.parentURL?.endsWith('/domain.ts')?'./time.ts':specifier, context);
+  return nextResolve(specifier.startsWith('./')&&!/\.(ts|js|mjs)$/.test(specifier)&&context.parentURL?.includes('/app/')?specifier+'.ts':specifier, context);
 } });
 const {seed,days}=await import('../app/domain.ts');
 const { buildScheduleExport, buildRoomBoardExport } = await import('../app/spreadsheet-export.ts');
+const {applyHousekeepingDay,rebalanceDay,housekeepingDay,updateDayTask}=await import('../app/housekeeping.ts');
 const generatedAt = new Date('2026-10-07T01:00:00Z');
 async function open(result) {
   assert.match(result.filename, /\.xlsx$/);
@@ -148,3 +149,16 @@ test('empty exports produce valid workbooks without invalid filters or missing d
 });
 
 test('attendant sheets keep duplicate names separate, sanitize tab names, exclude inactive/DND assignments and respect overrides',async()=>{const s=seed();s.employees=[{id:'one',name:"O'Brien / Team: [A] very long name repeated",position:'attendant',qualifications:['attendant'],active:true},{id:'two',name:"O'Brien / Team: [A] very long name repeated",position:'attendant',qualifications:['attendant'],active:true}];s.rooms=[{id:'a',number:'007',floor:0,zone:'East',type:'king',flag:'Departure',score:1},{id:'b',number:'008',floor:2,type:'suite',flag:'Departure',score:2},{id:'dnd',number:'009',floor:2,type:'king',flag:'DND',score:1},{id:'dormant',number:'010',floor:2,type:'king',flag:'Departure',score:1}];s.boards=[{id:'a',room:'a',employee:'one',status:'To clean',scoreOverride:1.5,flagOverride:'Early arrival'},{id:'b',room:'b',employee:'two',status:'Clean'},{id:'d',room:'dnd',employee:'one',status:'To clean',locked:true},{id:'z',room:'dormant',employee:'two',active:false}];const book=await open(await buildRoomBoardExport(s,generatedAt));const tabs=book.worksheets.slice(2);assert.equal(tabs.length,2);assert.equal(new Set(tabs.map(t=>t.name.toLowerCase())).size,2);for(const tab of tabs){assert.ok(tab.name.length<=31);assert.ok(!/[\\/*?:\[\]]/.test(tab.name));assert.equal(tab.getCell('A7').value,null);}assert.equal(tabs[0].getCell('A6').value.result,'007');assert.equal(tabs[1].getCell('A6').value.result,'008');const rooms=book.getWorksheet('Room assignments');assert.equal(rooms.getCell('B6').value,'Floor 0 · East');assert.equal(rooms.getCell('E6').value,'Early arrival');assert.equal(rooms.getCell('G6').value,1.5);assert.equal(rooms.getCell('D8').value,'Unassigned');assert.equal(rooms.getCell('F8').value,'Do not enter');assert.equal(rooms.getCell('D9').value,'Unassigned');assert.equal(book.getWorksheet('Attendant summary').getCell('B6').value.result,1);assert.match(book.getWorksheet('Attendant summary').getCell('B6').value.formula,/O’Brien/);});
+
+test('dated housekeeping exports use the selected day and omit no-service and DND rooms from attendant sheets',async()=>{
+  let state=seed();state.boards=[];
+  state=rebalanceDay(applyHousekeepingDay(state,'2026-10-10',[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'stayover'},{roomNumber:'203',service:'departure'}]),'2026-10-10');
+  state=updateDayTask(state,'2026-10-10','r2',{flagOverride:'DND',active:false});
+  const file=await buildRoomBoardExport(housekeepingDay(state,'2026-10-10'),generatedAt),book=await open(file);
+  assert.equal(file.filename,'easyman-room-board-2026-10-10.xlsx');
+  const overview=book.getWorksheet('Room assignments');assert.equal(overview.getCell('A2').value,'The Linden House | Oct 10, 2026');
+  assert.equal(overview.getCell('E7').value,'Stayover');assert.equal(overview.getCell('F8').value,'Do not enter');
+  assert.equal(overview.getCell('E9').value,'No service');assert.equal(overview.getCell('F9').value,'No task');assert.equal(overview.getCell('G9').value,0);
+  const printed=book.worksheets.slice(2).flatMap(s=>s.getColumn(1).values.filter(v=>v&&typeof v==='object'&&'result' in v).map(v=>v.result));
+  assert.deepEqual(printed.sort(),['201','202']);assert.ok(book.worksheets.slice(2).every(s=>s.pageSetup.orientation==='portrait'));
+});

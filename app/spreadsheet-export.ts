@@ -157,23 +157,23 @@ function attendantSheetName(name:string,used:Set<string>) {
   used.add(candidate.toLowerCase());return candidate;
 }
 export async function buildRoomBoardExport(state: State, exportedAt = new Date()): Promise<ExportResult> {
-  const date = new Intl.DateTimeFormat('en-CA', { timeZone: state.config.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(exportedAt);
+  const date = state.housekeepingDate || new Intl.DateTimeFormat('en-CA', { timeZone: state.config.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(exportedAt);
   const context = state.config.name+' | '+dateText(date);
   const book = newWorkbook(exportedAt);
-  const summary = boardSheet(book, 'Attendant summary', 'Today’s housekeeping team', context, 'Workload points measure room effort. The printable attendant tabs follow the room overview.', [
+  const summary = boardSheet(book, 'Attendant summary', 'Daily housekeeping team', context, 'Workload points measure room effort. The printable attendant tabs follow the room overview.', [
     {label:'Attendant',width:30},{label:'Assigned rooms',width:16,format:'0'},{label:'Workload points',width:19,format:'0.00'},{label:'Marked clean',width:17,format:'0'},{label:'Rooms left',width:16,format:'0'},
   ]);
-  const rooms = boardSheet(book, 'Room assignments', 'Today’s room board', context, 'Progress is the app status at export. DND rooms are held out of the attendant lists.', [
+  const rooms = boardSheet(book, 'Room assignments', 'Daily room board', context, 'Progress is the app status at export. DND rooms are held out of the attendant lists.', [
     {label:'Room',width:11,format:'@'},{label:'Location',width:19},{label:'Room type',width:25},{label:'Attendant',width:28},{label:'Service / priority',width:24},{label:'Progress at export',width:19},{label:'Workload points',width:17,format:'0.00'},
   ]);
   const roomRows=new Map<string,number>();
   const assignments=new Map(state.boards.filter(a=>a.active!==false).map(a=>[a.room,a]));
   const effective:Row[]=[...state.rooms].map((room):Row=>{const a=assignments.get(room.id);return {...room,score:a?.scoreOverride??room.score,flag:a?.flagOverride||room.flag};}).sort((a,b)=>text(a.number).localeCompare(text(b.number),undefined,{numeric:true}));
-  const usable=(room:Row)=>room.flag!=='DND'&&assignments.get(room.id)?.status!=='DND'?assignments.get(room.id):undefined;
+  const usable=(room:Row)=>room.service!=='none'&&room.flag!=='DND'&&assignments.get(room.id)?.status!=='DND'?assignments.get(room.id):undefined;
   const attendants=state.employees.filter(e=>e.active!==false&&(e.qualifications||[e.position]).includes(state.config.boardPosition)||effective.some(r=>usable(r)?.employee===e.id)).sort((a,b)=>text(a.name).localeCompare(text(b.name))||text(a.id).localeCompare(text(b.id)));
   const displayName=(id:string)=>{const e=attendants.find(e=>e.id===id);if(!e)return 'Unassigned';const same=attendants.filter(other=>text(other.name)===text(e.name));return text(e.name)+(same.length>1?' ('+(same.findIndex(other=>other.id===id)+1)+')':'');};
   for(const room of effective){const a=usable(room);const location=[room.floor!==undefined&&room.floor!==''?'Floor '+text(room.floor):'',text(room.zone)].filter(Boolean).join(' · ');const held=room.flag==='DND'||assignments.get(room.id)?.status==='DND';
-    const row=rooms.addRow([text(room.number),location,nameFor(state.config.roomTypes,room.type),a?displayName(a.employee):'Unassigned',text(room.flag),held?'Do not enter':a?.status==='Clean'?'Marked clean':text(a?.status||'Unassigned'),number(room.score)]);
+    const row=rooms.addRow([text(room.number),location,nameFor(state.config.roomTypes,room.type),a?displayName(a.employee):'Unassigned',text(room.service==='none'?'No service':room.service?(room.service==='departure'?'Departure':'Stayover')+(room.flag==='Early arrival'?' · Early arrival':'') : room.flag),room.service==='none'?'No task':held?'Do not enter':a?.status==='Clean'?'Marked clean':text(a?.status||'Unassigned'),room.service==='none'?0:number(room.score)]);
     roomRows.set(room.id,row.number);
     row.height=Math.max(29,Math.ceil(location.length/18)*15,Math.ceil(nameFor(state.config.roomTypes,room.type).length/24)*15,Math.ceil(text(room.flag).length/22)*15,Math.ceil((a?displayName(a.employee):'Unassigned').length/26)*15);
   }
@@ -182,11 +182,11 @@ export async function buildRoomBoardExport(state: State, exportedAt = new Date()
   for(const employee of attendants){
     const own=effective.filter(r=>usable(r)?.employee===employee.id).sort((a,b)=>number(a.floor)-number(b.floor)||text(a.zone).localeCompare(text(b.zone))||text(a.number).localeCompare(text(b.number),undefined,{numeric:true}));
     const name=attendantSheetName(displayName(employee.id),used);
-    const slip=boardSheet(book,name,'Today’s rooms — '+displayName(employee.id),context,'Tick Done as you finish. X = already marked clean. DND rooms are held off this list.',[
+    const slip=boardSheet(book,name,'Daily rooms — '+displayName(employee.id),context,'Tick Done as you finish. X = already marked clean. DND rooms are held off this list.',[
       {label:'Room',width:10,format:'@'},{label:'Location',width:16},{label:'Room type',width:23},{label:'Service / priority',width:25},{label:'Done',width:8},
     ],true);
     for(const room of own){const src=roomRows.get(room.id)!;const row=slip.addRow([null,null,null,null,null]);
-      const values=[text(room.number),rooms.getCell(src,2).value,nameFor(state.config.roomTypes,room.type),text(room.flag),usable(room)?.status==='Clean'?'X':''];
+      const values=[text(room.number),rooms.getCell(src,2).value,nameFor(state.config.roomTypes,room.type),text(rooms.getCell(src,5).value),usable(room)?.status==='Clean'?'X':''];
       for(const [i,column] of [1,2,3,5].entries())row.getCell(i+1).value={formula:"'Room assignments'!"+rooms.getColumn(column).letter+src,result:values[i] as string};
       row.getCell(5).value={formula:"IF('Room assignments'!F"+src+'="Marked clean","X","")',result:values[4] as string};
       row.getCell(5).alignment={horizontal:'center',vertical:'middle'};

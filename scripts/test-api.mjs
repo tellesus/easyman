@@ -105,3 +105,19 @@ test('snapshot catch-up advances in bounded batches, ignores duplicate times and
   assert.equal((await captureDueSnapshots('catchup-owner',now)).captured,0);
   const count=sql.prepare("SELECT COUNT(*) AS n FROM shift_snapshots WHERE property='catchup-property'").get().n;assert.equal(count,63);
 });
+
+test('daily housekeeping plans and dated tasks persist through the real API with scoped plan edits denied',async()=>{
+  const owner=await newIdentity(),scoped=await newIdentity(),actor='hk-owner',reader='hk-scoped';
+  for(const [id,identity] of [[actor,owner],[reader,scoped]]){await call(id,'team-workspace');assert.equal((await call(id,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);}
+  const directory={employees:[{id:'attendant',department:'hk',position:'attendant',active:true}],reporting:[]};
+  assert.equal((await call(actor,'team-workspace','POST',{action:'create',directory,timezone:'America/Chicago',boundaries:[]})).status,200);
+  const invite=await call(actor,'team','POST',{action:'invite',propertyId:actor,email:reader+'@example.invalid'}),token=new URLSearchParams(new URL(invite.value.inviteUrl).hash.slice(1)).get('join');
+  await call(reader,'team','POST',{action:'join',token});
+  await call(actor,'team','POST',{action:'approve',propertyId:actor,userId:reader,employeeId:'attendant',grants:[{capability:'HousekeepingBoards.View',scope:{type:'employees',ids:['attendant']}},{capability:'HousekeepingBoards.Assign',scope:{type:'employees',ids:['attendant']}}]});
+  const context=(await call(actor,'team-workspace')).value,records=[];
+  for(const day of ['2026-10-10','2026-10-11'])for(const [id,field,subject,value] of [['housekeepingDays:'+day,'housekeepingDays','',{id:day,date:day,items:[{room:'one',service:'departure'}],catalog:[]}],['boards:'+day+':one','boards','attendant',{id:day+'-one',room:'one',date:day,service:'departure',employee:'attendant',status:'To clean'}]])records.push(await seal(value,owner,context.members,{id,field,subject,propertyId:actor,revision:0},directory));
+  const saved=await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records,deleted:[]});assert.equal(saved.status,200,JSON.stringify(saved.value));
+  const visible=(await call(reader,'team-workspace','GET',undefined,'?property='+actor)).value;assert.equal(visible.resources.length,2);assert.ok(visible.resources.every(r=>r.field==='boards'));assert.deepEqual((await Promise.all(visible.resources.map(r=>openResource(r,scoped,reader)))).map(v=>v.date).sort(),['2026-10-10','2026-10-11']);
+  const denied=await call(reader,'team-workspace','PUT',{propertyId:actor,revision:visible.revision,records:[records.find(r=>r.field==='housekeepingDays')],deleted:[]});assert.equal(denied.status,403);
+  const reopened=(await call(actor,'team-workspace')).value;assert.equal(reopened.resources.filter(r=>r.field==='housekeepingDays').length,2);
+});

@@ -1,7 +1,7 @@
 import { zonedInstant } from './time';
 export type Row = { id: string; [key: string]: any };
 export type Configuration = { name: string; timezone: string; boardPosition: string; sample?: boolean; minRestHours?: number; maxWeeklyHours?: number; departments: Row[]; positions: Row[]; shifts: Row[]; roomTypes: Row[]; staffing: Row[]; boundaries: string[]; categories: string[] };
-export type State = { config: Configuration; employees: Row[]; rooms: Row[]; reporting: Row[]; availability: Row[]; passon: Row[]; checks: Row[]; training: Row[]; discipline: Row[]; schedule: Row[]; boards: Row[]; snapshots: Row[]; activity: Row[]; published: boolean; publishedWeeks?: string[]; publications?: Row[]; sample: boolean; week: string; feedback: Row[] };
+export type State = { config: Configuration; employees: Row[]; rooms: Row[]; reporting: Row[]; availability: Row[]; passon: Row[]; checks: Row[]; training: Row[]; discipline: Row[]; schedule: Row[]; boards: Row[]; housekeepingDays?: Row[]; housekeepingDate?: string; snapshots: Row[]; activity: Row[]; published: boolean; publishedWeeks?: string[]; publications?: Row[]; sample: boolean; week: string; feedback: Row[] };
 export const uid = () => crypto.randomUUID();
 export const today = (timezone='America/Chicago') => new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 export const defaults = (): Configuration => ({
@@ -105,8 +105,8 @@ export function balanceBoard(state:State):Row[] {
   const attendants=state.employees.filter(e=>e.active!==false&&(e.qualifications||[e.position]).includes(state.config.boardPosition));
   // Also recognize configurable attendant positions through existing board participants.
   const eligible=attendants;
-  const effectiveRooms:Row[]=state.rooms.map(r=>{const task=state.boards.find(b=>b.room===r.id);return {...r,score:task?.scoreOverride??r.score,flag:task?.flagOverride||r.flag};});
-  const dormant=state.boards.filter(b=>effectiveRooms.some(r=>r.id===b.room&&r.flag==='DND')).map(b=>({...b,active:false,status:'DND'}));
+  const effectiveRooms:Row[]=state.rooms.filter(r=>r.active!==false&&r.service!=='none').map(r=>{const task=state.boards.find(b=>b.room===r.id);return {...r,score:task?.scoreOverride??r.score,flag:task?.flagOverride||r.flag};});
+  const dormant=state.boards.filter(b=>effectiveRooms.some(r=>r.id===b.room&&r.flag==='DND')).map(b=>({...b,active:false,status:b.status==='Clean'?'Clean':'DND'}));
   const result=state.boards.filter(b=>b.active!==false&&b.locked&&eligible.some(e=>e.id===b.employee)&&effectiveRooms.some(r=>r.id===b.room&&r.flag!=='DND')).map(b=>({...b}));
   const totals:Record<string,number>={};eligible.forEach(e=>totals[e.id]=result.filter(b=>b.employee===e.id).reduce((sum,b)=>sum+Number(effectiveRooms.find(r=>r.id===b.room)?.score??1),0));
   for(const room of [...effectiveRooms].filter(r=>r.flag!=='DND'&&!result.some(b=>b.room===r.id)).sort((a,b)=>b.score-a.score||a.floor-b.floor)){const candidates=[...eligible].sort((a,b)=>totals[a.id]-totals[b.id] || result.filter(r=>r.employee===b.id&&state.rooms.find(x=>x.id===r.room)?.floor===room.floor).length-result.filter(r=>r.employee===a.id&&state.rooms.find(x=>x.id===r.room)?.floor===room.floor).length);const e=candidates[0];if(e){result.push({...state.boards.find(b=>b.room===room.id),id:state.boards.find(b=>b.room===room.id)?.id||uid(),room:room.id,employee:e.id,active:true,locked:false,status:state.boards.find(b=>b.room===room.id)?.status==='DND'?'To clean':state.boards.find(b=>b.room===room.id)?.status||'To clean'});totals[e.id]+=Number(room.score??1);}}

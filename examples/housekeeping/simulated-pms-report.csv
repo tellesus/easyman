@@ -1,0 +1,11 @@
+Report date,Room,Movement,Service date,Service requested
+2026-10-10,Room 201,Check-out,2026-10-10,Yes
+2026-10-10,202,Departure,2026-10-10,Yes
+2026-10-10,203,In house,2026-10-10,Yes
+2026-10-10,204,Stay over,2026-10-10,Yes
+2026-10-10,205,Check-out,2026-10-11,Yes
+2026-10-10,206,Stay over,2026-10-10,No
+2026-10-10,301,Departure,2026-10-10,Yes
+2026-10-10,302,Stay over,2026-10-10,Yes
+2026-10-10,999,Departure,2026-10-10,Yes
+2026-10-10,303,Arrival,2026-10-10,No
