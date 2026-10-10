@@ -74,3 +74,7 @@ Private GitHub feedback is configured and live-tested. Build 0.2 remains a devel
 ### Opening another browser or device
 
 Sign in with the same ChatGPT account. If EasyMan asks for an account recovery file, return to a browser where the workspace already opens and use **Account options → Download recovery file**. Choose a recovery passphrase yourself. In the new browser, select `easyman-account-recovery.json` and enter that same passphrase. Account recovery files are separate from configuration backups and working copies; signing in does not transfer the encryption key. Keep the working browser available until the other browser opens successfully.
+
+## Live testing on easyman.app
+
+The custom domain connects to the existing private Sites project and property database. Use [LIVE_TESTING.md](LIVE_TESTING.md) for first sign-in/account recovery, domain checks, the single-computer acceptance session and rollback instructions. The original chatgpt.site address stays available.
