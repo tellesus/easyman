@@ -79,6 +79,10 @@ export function rebalanceDay(state:State,date:string,employees:Row[]=state.emplo
   const current=new Set(balanced.map(b=>b.room));
   return {...state,boards:[...state.boards.filter(b=>!view.boards.includes(b)),...balanced.map(b=>({...b,date,service:view.rooms.find(r=>r.id===b.room)?.service})),...view.boards.filter(b=>!current.has(b.room)).map(b=>({...b,date,active:false}))]};
 }
+export function applyDaySetup(state:State,date:string,rows:ImportRoom[],balanceAssignments=!state.housekeepingDays?.some(d=>d.date===date)):State {
+  const next=applyHousekeepingDay(state,date,rows);
+  return balanceAssignments?rebalanceDay(next,date):next;
+}
 export function updateDayTask(state:State,date:string,room:string,update:Partial<Row>):State {
   const view=housekeepingDay(state,date),task=view.boards.find(b=>b.room===room);
   if(!task)throw new Error('Set up this room’s service before assigning it.');
