@@ -78,3 +78,7 @@ Sign in with the same ChatGPT account. If EasyMan asks for an account recovery f
 ## Live testing on easyman.app
 
 The custom domain connects to the existing private Sites project and property database. Use [LIVE_TESTING.md](LIVE_TESTING.md) for first sign-in/account recovery, domain checks, the single-computer acceptance session and rollback instructions. The original chatgpt.site address stays available.
+
+## Acceptance status — October 9, 2026
+
+Michael reported 12 of 13 live-domain workflow checks passed, including sign-in, same-account recovery, exports, feedback, record history, network interruption and scheduled snapshots while the app was closed. Housekeeping progress/locks/rebalancing/DND is the remaining item in that list. See [LIVE_TESTING.md](LIVE_TESTING.md) for the owner-reported results and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for finer-grained cases. Real-team and actual additional-device checks remain deferred. This records acceptance progress without creating a 1.0 release.

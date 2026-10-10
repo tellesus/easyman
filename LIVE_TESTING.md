@@ -8,7 +8,7 @@ Prepared October 9, 2026 (America/Chicago). This is a controlled testing setup f
 - Keep the working fallback at https://easyman-hotel-ops.michaelleza.chatgpt.site/.
 - Both addresses connect to the same Sites project, application deployment and property database. A change made through either address affects the same records. Use the sample property and fictional records for testing.
 - Site access stays private to the existing allowed account. Additional testers need private Site access and separate EasyMan property invitations/approval. A custom domain does not grant either.
-- Account keys and sessions belong to a browser origin. Do not rely on signing in to transfer your key. First open in another browser/origin may ask for an account recovery file. The Codex in-app browser opened the existing workspace on the new domain during this session without a recovery prompt; regular-browser portability still needs its own check.
+- Account keys and sessions belong to a browser origin. Do not rely on signing in to transfer your key. First open in another browser/origin may ask for an account recovery file. The Codex in-app browser opened the existing workspace on the new domain during this session without a recovery prompt; Michael subsequently confirmed same-account recovery and reload on this computer, including rejection of missing/wrong recovery files and wrong passphrases.
 
 ## Verified setup checks — October 9, 2026
 
@@ -30,23 +30,25 @@ Prepared October 9, 2026 (America/Chicago). This is a controlled testing setup f
 
 ## Acceptance session — one computer
 
-Record date, browser and build in TESTING_CHECKLIST.md. Leave failed or untested items unchecked; all multi-user and actual mobile-device checks remain deferred.
+Michael reported these results on October 9, 2026 (America/Chicago): **12 passed, 1 pending**. These checkmarks record the owner’s acceptance report, not a new assistant-run test session. Housekeeping progress/locks/rebalancing/DND is the only unchecked item in this live-domain list. Multi-user and actual mobile-device checks remain deferred.
 
-- [ ] HTTPS opens without a certificate warning; the address remains easyman.app through sign-in and return navigation.
-- [ ] Signed-out access prompts for sign-in; it does not expose property records. Check in a private browser window without importing a key there.
-- [ ] Same-account recovery opens the existing property. Reload preserves it. Missing/wrong recovery files and wrong passphrases do not replace the stored key.
-- [ ] Create a fictional TEST pass-on, reload and update/complete it; verify archive and history. Avoid real guest information.
-- [ ] Click an employee name in Scheduling, save a test split-days-off preference and reload. Regenerate a draft; check availability, consecutive days off, coverage, hours and rest. Partial regeneration leaves unselected dates intact. Restore fictional preferences after testing.
-- [ ] Export schedule and room-board XLSX files; open in each spreadsheet app available on this computer. Preserve leading-zero room numbers, numeric hours and draft/publication labels.
+- [x] HTTPS opens without a certificate warning; the address remains easyman.app through sign-in and return navigation.
+- [x] Signed-out access prompts for sign-in; it does not expose property records. Check in a private browser window without importing a key there.
+- [x] Same-account recovery opens the existing property. Reload preserves it. Missing/wrong recovery files and wrong passphrases do not replace the stored key.
+- [x] Create a fictional TEST pass-on, reload and update/complete it; verify archive and history. Avoid real guest information.
+- [x] Click an employee name in Scheduling, save a test split-days-off preference and reload. Regenerate a draft; check availability, consecutive days off, coverage, hours and rest. Partial regeneration leaves unselected dates intact. Restore fictional preferences after testing.
+- [x] Export schedule and room-board XLSX files; open in each spreadsheet app available on this computer. Preserve leading-zero room numbers, numeric hours and draft/publication labels. Owner confirmed the export checks and provided LibreOffice layout feedback. The resulting redesign adds portrait attendant handouts; assistant checks subsequently verified LibreOffice print output and live-download structure.
 - [ ] Change a fictional housekeeping task, lock it and rebalance; verify cleaning progress, locks and DND behavior.
-- [ ] Record a room check and a separate recheck; verify history.
-- [ ] Check coaching/discipline revisions using invented records only. Do not treat the sample access-profile preview as proof of actual multi-user permissions.
-- [ ] Verify a fresh background receipt under Shift pass-on → Snapshots after a scheduled run; close the app around a boundary and confirm the frozen historical state afterward. Domain activation does not prove the task executed.
-- [ ] Submit explicitly synthetic feedback and verify the expected category in the private feedback repository; remove/close synthetic issues after verification.
-- [ ] Repeat narrow-window and keyboard checks, then restore the normal window size. Actual phones/tablets remain deferred.
-- [ ] Briefly disconnect/reconnect the network; expect a clear save failure/retry path with no lost local working copy. If another session changes the same workspace, follow the conflict warning and reload before editing.
+- [x] Record a room check and a separate recheck; verify history.
+- [x] Check coaching/discipline revisions using invented records only. Do not treat the sample access-profile preview as proof of actual multi-user permissions.
+- [x] Verify a fresh background receipt under Shift pass-on → Snapshots after a scheduled run; close the app around a boundary and confirm the frozen historical state afterward. Domain activation does not prove the task executed.
+- [x] Submit explicitly synthetic feedback and verify the expected category in the private feedback repository; remove/close synthetic issues after verification.
+- [x] Repeat narrow-window and keyboard checks, then restore the normal window size. Actual phones/tablets remain deferred.
+- [x] Briefly disconnect/reconnect the network; expect a clear save failure/retry path with no lost local working copy. If another session changes the same workspace, follow the conflict warning and reload before editing.
 
-Use the detailed module checks in TESTING_CHECKLIST.md for the remainder. Record failures with invented data, expected/actual behavior and a screenshot. Do not call the release 1.0 until the required acceptance items are reviewed.
+The snapshot result includes a fresh scheduled background receipt, a capture with the app closed around a boundary, and frozen historical state afterward, as confirmed by Michael. This closes the previously unconfirmed scheduled-execution check.
+
+Use the detailed module checks in TESTING_CHECKLIST.md for additional cases beyond this acceptance list. Record failures with invented data, expected/actual behavior and a screenshot. Do not call the release 1.0 until the required acceptance items are reviewed.
 
 ## Hosting record and rollback
 
