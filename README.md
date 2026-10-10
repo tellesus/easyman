@@ -70,3 +70,7 @@ The owner-authenticated `/mcp` endpoint exposes `capture_shift_snapshots` and th
 The Windows author's runtime and package-manager compatibility shim are ignored under `.sites-runtime/` and never deployed. The standard starter scripts remain portable.
 
 Private GitHub feedback is configured and live-tested. Build 0.2 remains a development release while acceptance checks are recorded in TESTING_CHECKLIST.md. Checks needing other accounts or hardware are explicitly deferred. No 1.0 tag or release is created by this development build.
+
+### Opening another browser or device
+
+Sign in with the same ChatGPT account. If EasyMan asks for an account recovery file, return to a browser where the workspace already opens and use **Account options → Download recovery file**. Choose a recovery passphrase yourself. In the new browser, select `easyman-account-recovery.json` and enter that same passphrase. Account recovery files are separate from configuration backups and working copies; signing in does not transfer the encryption key. Keep the working browser available until the other browser opens successfully.
