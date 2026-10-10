@@ -43,6 +43,13 @@
       "when": 1791345446407,
       "tag": "0005_rich_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791669600000,
+      "tag": "0006_native_snapshot_scheduler",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ import { body } from '../team-server';
 import { captureDueSnapshots, snapshotStatus } from '../snapshot-server';
 const tools=[
   {name:'capture_shift_snapshots',description:'Preserve all due encrypted pass-on snapshots at exact configured shift boundaries, including missed boundaries. Runs for properties owned by the signed-in caller; never decrypts hotel records. Returns the number captured. Safe to repeat.',inputSchema:{type:'object',properties:{},additionalProperties:false}},
-  {name:'snapshot_status',description:'Read snapshot counts, latest boundary and last successful background check for properties owned by the signed-in caller. Does not capture snapshots or return hotel record contents.',inputSchema:{type:'object',properties:{},additionalProperties:false}},
+  {name:'snapshot_status',description:'Read snapshot counts, latest boundary and native automatic scheduler health for properties owned by the signed-in caller. Does not capture snapshots or return hotel record contents.',inputSchema:{type:'object',properties:{},additionalProperties:false}},
 ];
 export async function POST(request:Request){
   let message:any;try{message=await body(request,16000);}catch(e){if(e instanceof Response)return e;throw e;}
@@ -24,7 +24,7 @@ export async function POST(request:Request){
       if(!tools.some(t=>t.name===name))return Response.json({jsonrpc:'2.0',id,error:{code:-32601,message:'Tool not found.'}});
       const result=name==='capture_shift_snapshots'?await captureDueSnapshots(user.userId,new Date(),'background'):await snapshotStatus(user.userId);
       return reply({content:[{type:'text',text:JSON.stringify(result)}],structuredContent:result});
-    }catch{return reply({isError:true,content:[{type:'text',text:'Snapshot operation failed. Retry later and check the background task.'}]});}
+    }catch{return reply({isError:true,content:[{type:'text',text:'Snapshot operation failed. Retry later and check automatic scheduler health.'}]});}
   }
   return Response.json({jsonrpc:'2.0',id,error:{code:-32601,message:'Method not found.'}});
 }

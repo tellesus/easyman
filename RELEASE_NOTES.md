@@ -6,7 +6,7 @@ EasyMan brings shift handovers, scheduling, daily housekeeping and employee foll
 
 ## Included
 
-- Shift pass-ons with ownership, notes, escalation, completion, archive, privacy-conscious briefing images and preserved shift-boundary snapshots. The existing hourly background task remains connected.
+- Shift pass-ons with ownership, notes, escalation, completion, archive, privacy-conscious briefing images and preserved shift-boundary snapshots. A native Cloudflare scheduler replaces the incorrect hourly AI task; see SNAPSHOT_OPERATIONS.md.
 - Schedule generation with qualifications, availability, rest and hour constraints, partial regeneration, consecutive-days-off preferences and per-employee split-day consent. Employee names open their profiles. Published history preserves original assignments and shift times.
 - Daily housekeeping setup using a copyable room-catalog prompt for the hotel's approved LLM, followed by JSON upload/paste and explicit validation/review. First-time day setup balances workload points by default; same-day updates preserve attendants unless balancing is selected. Kept assignments, cleaning progress, DND holds and dated boards are retained.
 - Schedule XLSX exports and room-board XLSX exports with readable manager tables and portrait Letter attendant handouts. Room identifiers preserve leading zeros. No-service and DND rooms stay off attendant handouts.

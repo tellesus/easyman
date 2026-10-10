@@ -60,7 +60,7 @@ Use TESTING_CHECKLIST.md to extend validation beyond this release scope, and REC
 
 ## Hosting record and rollback
 
-The existing Sites service runs EasyMan. Cloudflare hosts the easyman.app DNS zone; this does not deploy a second Worker or database into the owner's Cloudflare account.
+The existing Sites service runs EasyMan. Cloudflare hosts the easyman.app DNS zone; the native snapshot scheduler is a separate Worker in the owner's Cloudflare account, with no second database.
 
 - Sites project: appgprj_6ac59f72cb7881918238960fa462ddf8.
 - Custom-domain binding: appgdom_6ac98e8b608081918184c990459d1284.
@@ -68,10 +68,18 @@ The existing Sites service runs EasyMan. Cloudflare hosts the easyman.app DNS zo
 - Apex A records: 162.159.143.30 and 172.66.3.26, DNS-only, TTL 300, as returned by Sites.
 - Ownership validation TXT names: _openai-site-verification.easyman.app and _cf-custom-hostname.easyman.app. Values are public DNS verification records, not app secrets.
 - Canonical testing address: easyman.app. www.easyman.app has not been configured.
-- Existing feedback secrets remain in the Sites environment; the existing linked snapshot task remains attached to the same project. No credentials are copied to DNS or source.
+- Existing feedback secrets remain in the Sites environment; a separate native Cloudflare scheduler calls the same project using machine authentication; the AI snapshot task has been removed. No credentials are copied to DNS or source.
 
 If the domain has a routing/sign-in problem, return to the original working address and stop testing through easyman.app while it is investigated. Keep both domain binding and DNS intact for diagnosis. If removing the alias is necessary, remove the Sites custom-domain binding and only the DNS records added for it, after confirming their recorded IDs and current values. This affects the alias, not the database. Do not remove the zone, project, storage or account keys.
 
 For a code regression, redeploy a verified previous Sites version using the native deployment workflow. Reverting the domain or code does not undo test-data changes; use history and retained encrypted exports to recover data deliberately.
 
 Reference: Cloudflare custom-hostname readiness requires active hostname and certificate state, plus DNS targeting the SaaS service: https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/getting-started/.
+
+## Native snapshot replacement — October 10, 2026
+
+The previous scheduled AI task did not satisfy the requirement for application-owned unattended snapshots. Its earlier acceptance results are retained as historical evidence, not proof of native scheduling. The task has been removed. A dedicated Cloudflare Cron Worker now calls the existing private application using machine service access and Ed25519 signatures; no data or account-key migration was performed.
+
+The complete local suite passes 73 checks. New tests invoke the real bundled Workers runtime with synthetic keys and encrypted records, including transient retry, redirect rejection, immutable boundary state, zero-capture receipts, overlap leases, per-property failure/recovery and bounded catch-up. This local runtime supports the May 22 compatibility date; production uses October 10. Application TypeScript, production build and scheduler dry-run checks pass.
+
+Live assistant evidence: the private app deployment succeeded with environment revision 3 and the additive migration. Cloudflare reports the native Worker's every-minute cron enabled, with workers.dev and preview URLs disabled. Sites reports no attached AI automations. A read-only authenticated probe initially returned no native job, then returned a real scheduled invocation: scheduled at 2026-10-10 18:57:23 UTC, started at 18:57:28.568 and succeeded at 18:57:30.134 (1:57 p.m. America/Chicago). It checked the existing property, captured zero new snapshots and recorded zero failures. No live capture POST was manually issued; this is a persisted timer receipt, independent of browser or connector capture. Customer records and property settings were not changed for testing. A synthetic live handover across the next configured boundary remains available as an owner checklist follow-up; isolated encrypted before/after testing passed.

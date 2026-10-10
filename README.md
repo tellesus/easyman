@@ -57,7 +57,7 @@ Records use separate browser-generated keys wrapped to approved account keys. Ac
 
 ## Background snapshots
 
-The owner-authenticated `/mcp` endpoint exposes `capture_shift_snapshots` and the read-only `snapshot_status`. The linked hourly task checks for due boundaries while browsers are closed. Every completed background check records a metadata-only receipt, including zero-capture checks. Shift pass-on → Snapshots shows the last background check independently of browser capture. The server preserves historical encrypted state at exact boundaries without decrypting hotel contents. See TESTING_CHECKLIST.md for single-computer acceptance checks.
+A native Cloudflare Cron Worker checks every minute, independently of ChatGPT, plugin connections and browsers. Signed machine requests run the application snapshot engine in its existing hosting/database; encrypted records are never decrypted by the job. Native receipts, retries, overlap protection and bounded catch-up are built in. Shift pass-on → Snapshots shows automatic checks and flags failures or overdue checks. Legacy MCP/browser capture remains a fallback and cannot certify native scheduler health. The prior AI task was an architectural mistake and has been removed. See [SNAPSHOT_OPERATIONS.md](SNAPSHOT_OPERATIONS.md) for operation and recovery.
 
 ## Project structure
 

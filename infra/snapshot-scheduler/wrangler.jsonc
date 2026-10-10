@@ -1,0 +1,14 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "easyman-snapshot-scheduler",
+  "account_id": "853fc09403983f79e49755d1166270c5",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": { "crons": ["* * * * *"] },
+  "vars": { "SNAPSHOT_ORIGIN": "https://easyman.app" },
+  "secrets": { "required": ["SNAPSHOT_SIGNING_JWK", "SITES_SERVICE_TOKEN"] },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}
