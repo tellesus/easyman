@@ -12,7 +12,7 @@ const {newIdentity,seal,openResource,emptyState,resources,directory,decode}=awai
 const {seed,today}=await import('../app/domain.ts');
 const {applyDaySetup,housekeepingDay,updateDayTask}=await import('../app/housekeeping.ts');
 const {restoreWorkingCopy}=await import('../app/working-copy.ts');
-const {encryptBackup,decryptBackup}=await import('../app/vault.ts');
+const {encryptBackup,decryptBackup,encrypt}=await import('../app/vault.ts');
 const {profileGrants}=await import('../app/access.ts');
 const sql=new DatabaseSync(':memory:');
 for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')).sort())sql.exec(readFileSync('drizzle/'+file,'utf8'));
@@ -24,6 +24,27 @@ const names=['team-workspace','team','keys','recovery','session-reset','snapshot
 for(const name of names){const file=path.join(out,name+'.mjs');await build({entryPoints:[name==='mcp'?'app/mcp/route.ts':'app/api/'+name+'/route.ts'],outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-platform-boundary',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return globalThis.__easymanHeaders.getStore()||new Headers();}':'export function redirect(){throw new Error("Redirect in API test");}'}));}}]});routes[name]=await import(pathToFileURL(file));}
 const snapshotFile=path.join(out,'snapshot-service.mjs');await build({entryPoints:['app/snapshot-server.ts'],outfile:snapshotFile,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-snapshot-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){}'}));}}]});const {captureDueSnapshots,propertySnapshotStatus}=await import(pathToFileURL(snapshotFile));
 const cookies=new Map();
+test('API persists pass-on expiry and unchanged legacy records upgrade without changing completion time',async()=>{
+  const actor='cutoff-api',identity=await newIdentity(),dir={employees:[],reporting:[]};
+  await call(actor,'team-workspace');await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey});
+  await call(actor,'team-workspace','POST',{action:'create',directory:dir,timezone:'America/Chicago',boundaries:['07:00']});
+  const context=(await call(actor,'team-workspace')).value;
+  const value={id:'one',subject:'SYNTHETIC completed',status:'Completed',completed:'2026-10-10T00:00:00.000Z',history:[]};
+  const record=await seal(value,identity,context.members,{id:'passon:one',propertyId:actor,field:'passon',subject:'',revision:0},dir);
+  for(const invalid of [{...record,snapshotExcludeAfter:'2026-02-31T00:00:00.000Z'},{...record,snapshotExcludeAfter:'bad'},{...record,aadVersion:1},{...record,field:'boards',id:'boards:one'}])assert.equal((await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records:[invalid],deleted:[]})).status,400);
+  // Construct a real old AAD-v1 ciphertext, then exercise the normal unchanged save upgrade.
+  const dataKey=await crypto.subtle.unwrapKey('raw',Buffer.from(record.wrapped[actor],'base64'),identity.privateKey,{name:'RSA-OAEP'},'AES-GCM',true,['encrypt']);
+  const legacy={...record,...await encrypt(value,dataKey,JSON.stringify([actor,record.id,record.field,record.subject])),aadVersion:1};delete legacy.snapshotExcludeAfter;
+  assert.equal((await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records:[legacy],deleted:[]})).status,200);
+  const fresh=(await call(actor,'team-workspace')).value,decoded=await decode(fresh.resources,identity,actor);assert.deepEqual(decoded.passon[0],value);
+  const clientFile=path.join(out,'team-client.mjs');await build({entryPoints:['app/team-client.ts'],outfile:clientFile,bundle:true,format:'esm',platform:'node',logLevel:'silent'});const {saveTeam}=await import(pathToFileURL(clientFile));
+  const teamContext={propertyId:actor,revision:fresh.revision,keyEpoch:fresh.keyEpoch,member:fresh.member,members:fresh.members,directory:fresh.directory,identity,known:new Map([[legacy.id,{resource:legacy,value:JSON.stringify(value)}]])};
+  const priorFetch=globalThis.fetch;
+  globalThis.fetch=async(url,options={})=>{const parsed=new URL(url,'https://easyman.test'),method=options.method||'GET',data=options.body?JSON.parse(options.body):undefined;const result=await call(actor,'team-workspace',method,data,parsed.search);return Response.json(result.value,{status:result.status});};
+  try{await saveTeam(decoded,teamContext,actor);}finally{globalThis.fetch=priorFetch;}
+  const stored=(await call(actor,'team-workspace')).value.resources.find(r=>r.id==='passon:one');assert.equal(stored.aadVersion,2);assert.equal(stored.snapshotExcludeAfter,'2026-10-10T12:00:00.000Z');assert.deepEqual(await openResource(stored,identity,actor),value);
+  const historical=JSON.parse(sql.prepare('SELECT data FROM resource_versions WHERE property=? AND resource_id=? ORDER BY timestamp DESC LIMIT 1').get(actor,actor+'::passon:one').data);assert.equal(historical.aadVersion,1);assert.deepEqual(await openResource(historical,identity,actor),value);
+});
 async function call(actor,route,method='GET',data,query=''){
   const headers=new Headers({'Origin':'https://easyman.test','Content-Type':'application/json'});
   if(cookies.has(actor))headers.set('Cookie',cookies.get(actor));
@@ -68,7 +89,7 @@ test('unattended snapshots reconstruct the exact encrypted boundary state and re
   const base={id:'passon:one',propertyId:'snapshot-property',field:'passon',subject:'',revision:0};
   const before=await seal({id:'one',subject:'Before handover',status:'Open'},identity,[m],base,directory),after=await seal({id:'one',subject:'After handover',status:'Completed'},identity,[m],base,directory);
   sql.prepare("INSERT INTO properties (id,owner,directory,timezone,boundaries,created_at) VALUES (?,?,?,?,?,?)").run('snapshot-property','snapshot-owner',JSON.stringify(directory),'America/Chicago','["07:00"]','2026-10-07T11:00:00.000Z');
-  sql.prepare('INSERT INTO encrypted_resources (id,property,field,subject,ciphertext,iv,wrapped,revision,updated_at,aad) VALUES (?,?,?,?,?,?,?,?,?,?)').run('snapshot-property::passon:one','snapshot-property','passon','',after.ciphertext,after.iv,JSON.stringify(after.wrapped),2,'2026-10-07T12:01:00.000Z',1);
+  sql.prepare('INSERT INTO encrypted_resources (id,property,field,subject,ciphertext,iv,wrapped,revision,updated_at,aad) VALUES (?,?,?,?,?,?,?,?,?,?)').run('snapshot-property::passon:one','snapshot-property','passon','',after.ciphertext,after.iv,JSON.stringify(after.wrapped),2,'2026-10-07T12:01:00.000Z',after.aadVersion);
   sql.prepare('INSERT INTO resource_versions (id,property,resource_id,data,actor,timestamp) VALUES (?,?,?,?,?,?)').run('snapshot-version','snapshot-property','snapshot-property::passon:one',JSON.stringify({...before,validFrom:'2026-10-07T11:50:00.000Z'}),'snapshot-owner','2026-10-07T12:01:00.000Z');
   assert.equal((await captureDueSnapshots('snapshot-owner',new Date('2026-10-07T12:05:00.000Z'))).captured,1);
   const snapshot=sql.prepare("SELECT * FROM shift_snapshots WHERE property='snapshot-property'").get();assert.equal(snapshot.boundary,'2026-10-07T12:00:00.000Z');

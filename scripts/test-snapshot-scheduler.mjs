@@ -21,11 +21,12 @@ const keyPair=await crypto.subtle.generateKey('Ed25519',true,['sign','verify']);
 const privateJwk=await crypto.subtle.exportKey('jwk',keyPair.privateKey);
 env.EASYMAN_SNAPSHOT_PUBLIC_JWK=JSON.stringify(await crypto.subtle.exportKey('jwk',keyPair.publicKey));
 mkdirSync('.sites-runtime/scheduler-tests',{recursive:true});
-await build({entryPoints:['app/snapshot-job.ts','app/snapshot-server.ts','app/snapshot-health.ts','app/team-crypto.ts'],outdir:'.sites-runtime/scheduler-tests',bundle:true,format:'esm',platform:'node',outExtension:{'.js':'.mjs'},logLevel:'silent',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env=globalThis.__snapshotTestEnv;':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){throw new Error("Unexpected redirect");}'}));}}]});
+await build({entryPoints:['app/snapshot-job.ts','app/snapshot-server.ts','app/snapshot-health.ts','app/team-crypto.ts','app/passon-snapshot.ts'],outdir:'.sites-runtime/scheduler-tests',bundle:true,format:'esm',platform:'node',outExtension:{'.js':'.mjs'},logLevel:'silent',plugins:[{name:'test-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env=globalThis.__snapshotTestEnv;':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){throw new Error("Unexpected redirect");}'}));}}]});
 const {runSnapshotJob,nativeSnapshotJobStatus}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/snapshot-job.mjs'));
 const {propertySnapshotStatus,captureDueSnapshots}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/snapshot-server.mjs'));
 const {snapshotHealthText}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/snapshot-health.mjs'));
-const {newIdentity,seal,openResource}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/team-crypto.mjs'));
+const {newIdentity,seal,openResource,rewrap}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/team-crypto.mjs'));
+const {includePassonInSnapshot,snapshotExcludeAfter}=await import(pathToFileURL(process.cwd()+'/.sites-runtime/scheduler-tests/passon-snapshot.mjs'));
 async function signed(payload={},signatureKey=keyPair.privateKey){
   const raw=JSON.stringify({purpose:'shift-snapshots',invocationId:crypto.randomUUID(),issuedAt:Date.now(),scheduledAt:Date.now(),...payload});
   const signature=await crypto.subtle.sign('Ed25519',signatureKey,new TextEncoder().encode('EasyManSnapshots/v1\n'+raw));
@@ -50,7 +51,7 @@ test('scheduled handler runs in the real Workers runtime with no browser or visi
   const before=await seal({id:'test',subject:'SYNTHETIC before',status:'Open'},identity,[member],meta,directory);
   const after=await seal({id:'test',subject:'SYNTHETIC after',status:'Completed'},identity,[member],meta,directory);
   const fullId='native-exact::passon:test';
-  sql.prepare('INSERT INTO encrypted_resources (id,property,field,subject,ciphertext,iv,wrapped,revision,updated_at,aad) VALUES (?,?,?,?,?,?,?,?,?,?)').run(fullId,'native-exact','passon','',after.ciphertext,after.iv,JSON.stringify(after.wrapped),1,new Date(boundaryMs+1000).toISOString(),1);
+  sql.prepare('INSERT INTO encrypted_resources (id,property,field,subject,ciphertext,iv,wrapped,revision,updated_at,aad) VALUES (?,?,?,?,?,?,?,?,?,?)').run(fullId,'native-exact','passon','',after.ciphertext,after.iv,JSON.stringify(after.wrapped),1,new Date(boundaryMs+1000).toISOString(),after.aadVersion);
   sql.prepare('INSERT INTO resource_versions (id,property,resource_id,data,actor,timestamp) VALUES (?,?,?,?,?,?)').run('native-version','native-exact',fullId,JSON.stringify({...before,validFrom:new Date(boundaryMs-30000).toISOString()}),'test',new Date(boundaryMs+1000).toISOString());
   const built=await build({entryPoints:['infra/snapshot-scheduler/worker.ts'],bundle:true,format:'esm',platform:'browser',write:false,logLevel:'silent'});
   let requests=0, mode='retry';
@@ -100,4 +101,55 @@ test('native batches rotate properties and bounded history catch-up converges wi
   assert.ok(sql.prepare("SELECT COUNT(*) AS n FROM shift_snapshots WHERE property='long-catchup'").get().n>=117);
   assert.equal(sql.prepare("SELECT data FROM shift_snapshots WHERE property='native-exact'").get().data,old);
   assert.equal((await captureDueSnapshots('long-catchup-owner')).captured,0);
+});
+
+test('completed pass-ons expire at exactly 12 elapsed hours; old unresolved and reopened items remain',()=>{
+  const at='2026-10-10T12:00:00.000Z';
+  for(const [completed,expected] of [['2026-10-10T00:00:00.001Z',true],['2026-10-10T00:00:00.000Z',false],['2026-10-09T23:59:59.999Z',false]])assert.equal(includePassonInSnapshot({status:'Completed',completed},at),expected);
+  for(const status of ['Open','In progress'])assert.equal(includePassonInSnapshot({status,completed:'2026-01-01T00:00:00.000Z'},at),true);
+  for(const completed of [undefined,'bad','2026-02-31T00:00:00Z'])assert.equal(includePassonInSnapshot({status:'Completed',completed},at),true);
+  assert.equal(snapshotExcludeAfter({status:'Completed',completed:'2026-10-09T07:00'},'America/Chicago'),'2026-10-10T00:00:00.000Z');
+  assert.equal(snapshotExcludeAfter({status:'Completed',completed:'2026-10-09T07:00:05.125'},'America/Chicago'),'2026-10-10T00:00:05.125Z');
+  // Twelve elapsed hours across the fall-back change, independent of the computer's zone.
+  assert.equal(includePassonInSnapshot({status:'Completed',completed:'2026-10-31T18:00:00-05:00'},'2026-11-01T11:00:00.000Z'),false);
+});
+
+test('expiry metadata is authenticated, survives key provisioning and cannot be relabeled without breaking decryption',async()=>{
+  const identity=await newIdentity(),member={userId:'cutoff-crypto',status:'active',employeeId:'',grants:[{capability:'*',scope:{type:'property'}}],publicKey:identity.publicKey};
+  const value={id:'one',subject:'SYNTHETIC completion',status:'Completed',completed:'2026-10-10T00:00:00.000Z'};
+  const record=await seal(value,identity,[member],{id:'passon:one',propertyId:'cutoff-crypto',field:'passon',subject:'',revision:0},{employees:[],reporting:[]});
+  assert.equal(record.aadVersion,2);assert.equal(record.snapshotExcludeAfter,'2026-10-10T12:00:00.000Z');assert.deepEqual(await openResource(record,identity,member.userId),value);
+  const provisioned=await rewrap(record,identity,[member],member.userId,{employees:[],reporting:[]});assert.deepEqual(await openResource(provisioned,identity,member.userId),value);assert.equal(provisioned.snapshotExcludeAfter,record.snapshotExcludeAfter);
+  for(const change of [{snapshotExcludeAfter:null},{snapshotExcludeAfter:'2026-10-10T13:00:00.000Z'},{aadVersion:1}])await assert.rejects(()=>openResource({...record,...change},identity,member.userId));
+});
+
+test('catch-up applies completion age to boundary-time versions, including reopening and notes after completion',async()=>{
+  const id='cutoff-history',owner=id+'-owner',boundary='2026-10-10T12:00:00.000Z';
+  property(id,'UTC','["12:00"]','2026-10-10T11:00:00.000Z');
+  const identity=await newIdentity(),member={userId:owner,status:'active',employeeId:'',grants:[{capability:'*',scope:{type:'property'}}],publicKey:identity.publicKey},dir={employees:[],reporting:[]};
+  async function saved(name,value,updated='2026-10-10T11:30:00.000Z'){
+    const record=await seal({id:name,subject:'SYNTHETIC '+name,...value},identity,[member],{id:'passon:'+name,propertyId:id,field:'passon',subject:'',revision:0},dir);
+    sql.prepare('INSERT INTO encrypted_resources (id,property,field,subject,ciphertext,iv,wrapped,revision,updated_at,aad,snapshot_exclude_after) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(id+'::'+record.id,id,'passon','',record.ciphertext,record.iv,JSON.stringify(record.wrapped),1,updated,record.aadVersion,record.snapshotExcludeAfter);
+    return record;
+  }
+  await saved('at-cutoff',{status:'Completed',completed:'2026-10-10T00:00:00.000Z'});
+  await saved('older-with-note',{status:'Completed',completed:'2026-10-09T23:00:00.000Z',history:[{at:'2026-10-10T11:00:00Z',action:'note'}]});
+  await saved('just-under',{status:'Completed',completed:'2026-10-10T00:00:00.001Z'});
+  await saved('old-unresolved',{status:'Open',created:'2026-01-01T00:00:00Z'});
+  await saved('reopened-before',{status:'In progress',completed:'2026-01-01T00:00:00Z'});
+  for(const [name,before,after] of [
+    ['completed-after',{status:'Open'},{status:'Completed',completed:'2026-10-10T12:01:00Z'}],
+    ['reopened-after',{status:'Completed',completed:'2026-10-09T23:00:00Z'},{status:'In progress'}],
+  ]){
+    const current=await saved(name,after,'2026-10-10T12:01:00.000Z');
+    const prior=await seal({id:name,subject:'SYNTHETIC '+name,...before},identity,[member],{id:current.id,propertyId:id,field:'passon',subject:'',revision:0},dir);
+    sql.prepare('INSERT INTO resource_versions (id,property,resource_id,data,actor,timestamp) VALUES (?,?,?,?,?,?)').run(name,id,id+'::'+current.id,JSON.stringify({...prior,validFrom:'2026-10-10T11:30:00.000Z'}),owner,'2026-10-10T12:01:00.000Z');
+  }
+  // Run a day late: recently completed at the boundary must still be included.
+  assert.equal((await captureDueSnapshots(owner,new Date('2026-10-11T11:00:00.000Z'))).captured,1);
+  const row=sql.prepare('SELECT * FROM shift_snapshots WHERE property=?').get(id);
+  assert.equal(row.boundary,boundary);assert.equal(JSON.parse(row.policy).completedAgeHours,12);
+  const records=JSON.parse(row.data);assert.deepEqual(records.map(r=>r.id).sort(),['passon:completed-after','passon:just-under','passon:old-unresolved','passon:reopened-before']);
+  const contents=await Promise.all(records.map(r=>openResource(r,identity,owner)));assert.equal(contents.find(r=>r.id==='completed-after').status,'Open');
+  const preserved=row.data;await captureDueSnapshots(owner,new Date('2026-10-11T11:30:00.000Z'));assert.equal(sql.prepare('SELECT data FROM shift_snapshots WHERE property=?').get(id).data,preserved);
 });

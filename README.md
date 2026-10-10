@@ -57,6 +57,8 @@ Records use separate browser-generated keys wrapped to approved account keys. Ac
 
 ## Background snapshots
 
+New shift snapshots omit pass-ons that had been completed for 12 hours or more at the shift boundary. Unresolved and recently completed items remain. Later notes do not restart that clock; later edits do not change a preserved snapshot. Existing encrypted records upgrade their snapshot expiry metadata when an authorized editable workspace next opens/saves. Existing snapshots retain their original contents.
+
 A native Cloudflare Cron Worker checks every minute, independently of ChatGPT, plugin connections and browsers. Signed machine requests run the application snapshot engine in its existing hosting/database; encrypted records are never decrypted by the job. Native receipts, retries, overlap protection and bounded catch-up are built in. Shift pass-on → Snapshots shows automatic checks and flags failures or overdue checks. Legacy MCP/browser capture remains a fallback and cannot certify native scheduler health. The prior AI task was an architectural mistake and has been removed. See [SNAPSHOT_OPERATIONS.md](SNAPSHOT_OPERATIONS.md) for operation and recovery.
 
 ## Project structure

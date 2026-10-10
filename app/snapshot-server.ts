@@ -1,6 +1,7 @@
 import { db, parsedResource } from './team-server';
 import { zonedInstant } from './time';
 import { days } from './domain';
+import { completedSnapshotHours } from './passon-snapshot';
 
 // Browser catch-up and the native job share immutable ciphertext history.
 export async function capturePropertySnapshots(property: any, now = new Date(), limit = 200) {
@@ -35,11 +36,15 @@ export async function capturePropertySnapshots(property: any, now = new Date(), 
       if (!value || value.field !== 'passon') continue;
       const validFrom = superseded ? value.validFrom : value.updated_at;
       if (!validFrom || validFrom > at) continue;
+      // Apply the policy to the version that existed at the boundary, not today's state.
+      const exclusion = superseded ? value.snapshotExcludeAfter : value.snapshot_exclude_after;
+      const aad = superseded ? value.aadVersion : value.aad;
+      if (aad === 2 && exclusion && Date.parse(exclusion) <= Date.parse(at)) continue;
       records.push(superseded ? value : parsedResource(value));
     }
     const createdAt = new Date().toISOString();
     const saved = await db().batch([
-      db().prepare('INSERT OR IGNORE INTO shift_snapshots (id,property,boundary,incoming,closing,data,created_at) VALUES (?,?,?,?,?,?,?)').bind(id, property.id, at, boundary, closing, JSON.stringify(records), createdAt),
+      db().prepare('INSERT OR IGNORE INTO shift_snapshots (id,property,boundary,incoming,closing,data,created_at,policy) VALUES (?,?,?,?,?,?,?,?)').bind(id, property.id, at, boundary, closing, JSON.stringify(records), createdAt, JSON.stringify({version:1,completedAgeHours:completedSnapshotHours,timezone:property.timezone})),
       db().prepare('INSERT OR IGNORE INTO audit_events (id,owner,action,timestamp) VALUES (?,?,?,?)').bind('snapshot:' + id, property.id, 'shift.snapshot.automatic', createdAt),
     ]);
     if (saved[0].meta.changes) captured++;

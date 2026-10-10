@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { db, response } from './team-server';
 import { capturePropertySnapshots } from './snapshot-server';
+import { completedSnapshotHours } from './passon-snapshot';
 
 const purpose = 'EasyManSnapshots/v1\n';
 async function signedBody(request: Request) {
@@ -77,5 +78,6 @@ export async function nativeSnapshotJobStatus(request: Request) {
   if (!expected || supplied.length > 256 || difference !== 0) return response({ error: 'Unauthorized.' }, 401);
   const job = await db().prepare("SELECT scheduled_at AS scheduledAt,attempted_at AS attemptedAt,succeeded_at AS succeededAt,status,captured,checked,failed FROM snapshot_scheduler_job WHERE id='native'").first();
   const properties = await db().prepare("SELECT COUNT(*) AS total,SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed,MIN(succeeded_at) AS oldestSuccess FROM snapshot_scheduler_properties").first();
-  return response({ scheduler: 'cloudflare-cron', job, properties });
+  const legacy = await db().prepare("SELECT COUNT(*) AS count FROM encrypted_resources WHERE field='passon' AND aad<>2").first<{count:number}>();
+  return response({ scheduler: 'cloudflare-cron', job, properties, passonPolicy: { version:1,completedAgeHours:completedSnapshotHours,legacyRecordsAwaitingUpgrade:legacy?.count||0 } });
 }
