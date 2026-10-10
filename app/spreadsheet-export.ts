@@ -129,42 +129,82 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
   return result(book, `easyman-schedule-${dates[0]}-to-${dates[6]}.xlsx`);
 }
 
+function boardSheet(book: ExcelJS.Workbook, name: string, title: string, context: string, note: string, columns: Column[], portrait=false) {
+  const ws=sheet(book,name,title,context,note,columns);
+  ws.columns.forEach((column,i)=>{column.font={name:'Arial',size:11,color:{argb:INK}};column.alignment={vertical:'middle',horizontal:columns[i].format&&columns[i].format!=='@'?'center':'left',indent:columns[i].format?0:1,wrapText:true};});
+  ws.getCell('A1').font={name:'Arial',size:16,bold:true,color:{argb:portrait?INK:GREEN}};
+  ws.getRow(1).height=Math.max(27,Math.ceil(title.length/(portrait?48:80))*20);
+  ws.getRow(2).height=Math.max(24,Math.ceil(context.length/(portrait?75:110))*16);
+  ws.getCell('A3').font={name:'Arial',size:10,color:{argb:INK}};
+  ws.getRow(3).height=30;ws.getRow(4).height=8;
+  ws.getRow(5).height=30;
+  ws.getRow(5).eachCell(cell=>{cell.font={name:'Arial',size:11,bold:true,color:{argb:portrait?INK:'FFFFFFFF'}};cell.alignment={horizontal:'center',vertical:'middle',wrapText:true};cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:portrait?'FFE9EEE7':GREEN}};cell.border={right:{style:'thin',color:{argb:portrait?'FFBAC4B6':'FFFFFFFF'}}};});
+  ws.pageSetup={...ws.pageSetup,orientation:portrait?'portrait':'landscape',paperSize:1 as ExcelJS.PaperSize,fitToWidth:1,fitToHeight:0,horizontalCentered:true,margins:{left:0.3,right:0.3,top:0.35,bottom:0.35,header:0.15,footer:0.15}};
+  ws.headerFooter={oddFooter:'&LEasyMan&RPage &P of &N'};
+  return ws;
+}
+function boardFinish(ws:ExcelJS.Worksheet,count:number,portrait=false) {
+  finish(ws,count,portrait?28:29);
+  for(let row=6;row<6+count;row++)ws.getRow(row).eachCell({includeEmpty:true},cell=>{cell.border={bottom:{style:'thin',color:{argb:'FFE1E8DA'}},right:{style:'thin',color:{argb:'FFE1E8DA'}}};if(portrait)cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};});
+  if(portrait)ws.autoFilter=undefined;
+}
+function attendantSheetName(name:string,used:Set<string>) {
+  // Typographic apostrophes avoid print-name escaping issues in spreadsheet readers.
+  const clean=text(name).replace(/[\\/*?:\[\]\u0000-\u001F]/g,' ').replace(/'/g,'’').trim()||'Attendant';
+  const truncate=(value:string,size:number)=>value.slice(0,size).replace(/[\uD800-\uDBFF]$/,'');
+  let candidate=truncate(clean,31),n=2;
+  while(used.has(candidate.toLowerCase())){const suffix=' ('+n+++')';candidate=truncate(clean,31-suffix.length)+suffix;}
+  used.add(candidate.toLowerCase());return candidate;
+}
 export async function buildRoomBoardExport(state: State, exportedAt = new Date()): Promise<ExportResult> {
   const date = new Intl.DateTimeFormat('en-CA', { timeZone: state.config.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(exportedAt);
-  const context = `${state.config.name} | ${dateText(date)} | ${state.config.timezone}`;
+  const context = state.config.name+' | '+dateText(date);
   const book = newWorkbook(exportedAt);
-  const summary = sheet(book, 'Attendant summary', 'Housekeeping workload', context, 'Current board snapshot. Workload points reflect room scores; equal workload may mean different room counts.', [
-    { label: 'Attendant', width: 29 }, { label: 'Assigned rooms', width: 20, format: '0' }, { label: 'Workload points', width: 22, format: '0.##' },
-    { label: 'Clean rooms', width: 18, format: '0' }, { label: 'Rooms to clean', width: 20, format: '0' }, { label: 'Locked rooms', width: 19, format: '0' }, { label: 'Attendant ID', width: 25 },
+  const summary = boardSheet(book, 'Attendant summary', 'Today’s housekeeping team', context, 'Workload points measure room effort. The printable attendant tabs follow the room overview.', [
+    {label:'Attendant',width:30},{label:'Assigned rooms',width:16,format:'0'},{label:'Workload points',width:19,format:'0.00'},{label:'Marked clean',width:17,format:'0'},{label:'Rooms left',width:16,format:'0'},
   ]);
-  summary.getColumn(7).hidden = true;
-  const rooms = sheet(book, 'Room assignments', 'Room assignments', context, 'Room numbers are text to preserve leading zeros. Unassigned rooms, including DND rooms, are included. Locked assignments remain fixed during rebalancing.', [
-    { label: 'Room', width: 14, format: '@' }, { label: 'Floor / zone', width: 17 }, { label: 'Room type', width: 25 }, { label: 'Attendant', width: 27 },
-    { label: 'Room flag', width: 22 }, { label: 'Cleaning status', width: 21 }, { label: 'Workload points', width: 21, format: '0.##' },
-    { label: 'Assignment locked', width: 22 }, { label: 'Attendant ID', width: 25 },
+  const rooms = boardSheet(book, 'Room assignments', 'Today’s room board', context, 'Progress is the app status at export. DND rooms are held out of the attendant lists.', [
+    {label:'Room',width:11,format:'@'},{label:'Location',width:19},{label:'Room type',width:25},{label:'Attendant',width:28},{label:'Service / priority',width:24},{label:'Progress at export',width:19},{label:'Workload points',width:17,format:'0.00'},
   ]);
-  for (const room of [...state.rooms].sort((a, b) => text(a.number).localeCompare(text(b.number), undefined, { numeric: true }))) {
-    const assignment = state.boards.find(a => a.room === room.id);
-    rooms.addRow([text(room.number), typeof room.floor === 'number' ? room.floor : text(room.floor), nameFor(state.config.roomTypes, room.type),
-      assignment ? employeeName(state, assignment.employee) : 'Unassigned', text(room.flag), text(assignment?.status || 'Unassigned'), number(room.score),
-      assignment?.locked ? 'Yes' : 'No', text(assignment?.employee),
-    ]);
+  const roomRows=new Map<string,number>();
+  const assignments=new Map(state.boards.filter(a=>a.active!==false).map(a=>[a.room,a]));
+  const effective:Row[]=[...state.rooms].map((room):Row=>{const a=assignments.get(room.id);return {...room,score:a?.scoreOverride??room.score,flag:a?.flagOverride||room.flag};}).sort((a,b)=>text(a.number).localeCompare(text(b.number),undefined,{numeric:true}));
+  const usable=(room:Row)=>room.flag!=='DND'&&assignments.get(room.id)?.status!=='DND'?assignments.get(room.id):undefined;
+  const attendants=state.employees.filter(e=>e.active!==false&&(e.qualifications||[e.position]).includes(state.config.boardPosition)||effective.some(r=>usable(r)?.employee===e.id)).sort((a,b)=>text(a.name).localeCompare(text(b.name))||text(a.id).localeCompare(text(b.id)));
+  const displayName=(id:string)=>{const e=attendants.find(e=>e.id===id);if(!e)return 'Unassigned';const same=attendants.filter(other=>text(other.name)===text(e.name));return text(e.name)+(same.length>1?' ('+(same.findIndex(other=>other.id===id)+1)+')':'');};
+  for(const room of effective){const a=usable(room);const location=[room.floor!==undefined&&room.floor!==''?'Floor '+text(room.floor):'',text(room.zone)].filter(Boolean).join(' · ');const held=room.flag==='DND'||assignments.get(room.id)?.status==='DND';
+    const row=rooms.addRow([text(room.number),location,nameFor(state.config.roomTypes,room.type),a?displayName(a.employee):'Unassigned',text(room.flag),held?'Do not enter':a?.status==='Clean'?'Marked clean':text(a?.status||'Unassigned'),number(room.score)]);
+    roomRows.set(room.id,row.number);
+    row.height=Math.max(29,Math.ceil(location.length/18)*15,Math.ceil(nameFor(state.config.roomTypes,room.type).length/24)*15,Math.ceil(text(room.flag).length/22)*15,Math.ceil((a?displayName(a.employee):'Unassigned').length/26)*15);
   }
-  finish(rooms, state.rooms.length);
-  const assignedEmployees = [...new Set(state.boards.filter(a => state.rooms.some(r => r.id === a.room)).map(a => a.employee))];
-  const lastRoom = Math.max(6, state.rooms.length + 5);
-  for (const id of assignedEmployees) {
-    const assigned = state.rooms.filter(r => state.boards.some(a => a.room === r.id && a.employee === id));
-    const clean = assigned.filter(r => state.boards.find(a => a.room === r.id)?.status === 'Clean').length;
-    const locked = assigned.filter(r => state.boards.find(a => a.room === r.id)?.locked).length;
-    const row = summary.addRow([employeeName(state, id), null, null, null, null, null, text(id)]);
-    const n = row.number;
-    row.getCell(2).value = { formula: `SUMPRODUCT(--('Room assignments'!$I$6:$I$${lastRoom}=G${n}))`, result: assigned.length };
-    row.getCell(3).value = { formula: `SUMPRODUCT(('Room assignments'!$I$6:$I$${lastRoom}=G${n})*'Room assignments'!$G$6:$G$${lastRoom})`, result: assigned.reduce((total, r) => total + number(r.score), 0) };
-    row.getCell(4).value = { formula: `SUMPRODUCT(('Room assignments'!$I$6:$I$${lastRoom}=G${n})*('Room assignments'!$F$6:$F$${lastRoom}="Clean"))`, result: clean };
-    row.getCell(5).value = { formula: `B${n}-D${n}`, result: assigned.length - clean };
-    row.getCell(6).value = { formula: `SUMPRODUCT(('Room assignments'!$I$6:$I$${lastRoom}=G${n})*('Room assignments'!$H$6:$H$${lastRoom}="Yes"))`, result: locked };
+  boardFinish(rooms,effective.length);
+  const used=new Set(['attendant summary','room assignments']);
+  for(const employee of attendants){
+    const own=effective.filter(r=>usable(r)?.employee===employee.id).sort((a,b)=>number(a.floor)-number(b.floor)||text(a.zone).localeCompare(text(b.zone))||text(a.number).localeCompare(text(b.number),undefined,{numeric:true}));
+    const name=attendantSheetName(displayName(employee.id),used);
+    const slip=boardSheet(book,name,'Today’s rooms — '+displayName(employee.id),context,'Tick Done as you finish. X = already marked clean. DND rooms are held off this list.',[
+      {label:'Room',width:10,format:'@'},{label:'Location',width:16},{label:'Room type',width:23},{label:'Service / priority',width:25},{label:'Done',width:8},
+    ],true);
+    for(const room of own){const src=roomRows.get(room.id)!;const row=slip.addRow([null,null,null,null,null]);
+      const values=[text(room.number),rooms.getCell(src,2).value,nameFor(state.config.roomTypes,room.type),text(room.flag),usable(room)?.status==='Clean'?'X':''];
+      for(const [i,column] of [1,2,3,5].entries())row.getCell(i+1).value={formula:"'Room assignments'!"+rooms.getColumn(column).letter+src,result:values[i] as string};
+      row.getCell(5).value={formula:"IF('Room assignments'!F"+src+'="Marked clean","X","")',result:values[4] as string};
+      row.getCell(5).alignment={horizontal:'center',vertical:'middle'};
+      row.height=Math.max(28,Math.ceil(text(values[1]).length/15)*15,Math.ceil(text(values[2]).length/22)*15,Math.ceil(text(values[3]).length/23)*15);
+    }
+    boardFinish(slip,own.length,true);
+    if(!own.length)slip.getCell('A6').value='No rooms assigned today.';
+    const noteRow=Math.max(6,own.length+5)+2;slip.mergeCells(noteRow,1,noteRow,5);slip.getCell(noteRow,1).value='Notes for your supervisor';slip.getCell(noteRow,1).font={name:'Arial',size:11,bold:true,color:{argb:INK}};slip.getRow(noteRow).height=22;
+    for(let n=noteRow+1;n<=noteRow+3;n++){slip.mergeCells(n,1,n,5);slip.getRow(n).height=24;slip.getCell(n,1).border={bottom:{style:'thin',color:{argb:'FFBAC4B6'}}};}
+    slip.pageSetup.printArea='A1:E'+(noteRow+3);
+    const clean=own.filter(r=>usable(r)?.status==='Clean').length,total=own.reduce((sum,r)=>sum+number(r.score),0),row=summary.addRow([displayName(employee.id),null,null,null,null]);
+    const quoted="'"+name.replace(/'/g,"''")+"'",last=Math.max(6,own.length+5);
+    row.getCell(2).value=own.length?{formula:'COUNTA('+quoted+'!A6:A'+last+')',result:own.length}:0;
+    row.getCell(3).value=own.length?{formula:'SUM('+own.map(r=>"'Room assignments'!G"+roomRows.get(r.id)).join(',')+')',result:total}:0;
+    row.getCell(4).value=own.length?{formula:'COUNTIF('+quoted+'!E6:E'+last+',"X")',result:clean}:0;
+    row.getCell(5).value={formula:'B'+row.number+'-D'+row.number,result:own.length-clean};
+    row.height=Math.max(29,Math.ceil(displayName(employee.id).length/28)*15);
   }
-  finish(summary, assignedEmployees.length);
-  return result(book, `easyman-room-board-${date}.xlsx`);
+  boardFinish(summary,attendants.length);
+  return result(book, 'easyman-room-board-'+date+'.xlsx');
 }

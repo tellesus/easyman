@@ -39,7 +39,7 @@ Use this checklist together, one section at a time. Use the sample property and 
 - [ ] **H03 — Locks and progress:** Lock an assignment, mark another room clean, then rebalance. Expect the locked assignment and completed progress to remain.
 - [ ] **H04 — Overrides and reassignment:** Set a temporary score/flag override and manually reassign a room. Expect totals and exported values to reflect the override without silently rewriting the room catalog.
 - [ ] **H05 — DND:** Flag a room DND, including a previously locked assignment, and rebalance. Expect it to remain visible as DND outside active cleaning work.
-- [ ] **H06 — Board XLSX:** Export the board and open it. Expect `007` to remain text, unassigned and DND rooms to be represented, fractional totals to stay numeric, and lock/clean states to match the board.
+- [ ] **H06 — Board XLSX:** Export the board and open it. Expect `007` to remain text, unassigned and DND rooms to be represented, fractional totals to stay numeric, and cleaning progress to match the board. Expect no attendant-ID or assignment-lock fields. Print a named attendant tab: portrait Letter, rooms sorted by floor/zone, readable room types, Done boxes and supervisor-note lines. DND and inactive assignments stay off handouts. Large lists may continue on another portrait page rather than shrinking to unreadable text.
 
 ## 5. Inspections, coaching and discipline
 

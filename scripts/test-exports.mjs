@@ -54,8 +54,9 @@ test('schedule workbook limits export to the selected week and preserves overnig
   assert.equal(overview.views[0].ySplit, 5);
   assert.ok(details.autoFilter);
 });
-test('room board workbook retains leading zeros, unassigned and DND rooms, fractional points and lock/clean status', async () => {
+test('room board includes readable manager progress and portrait attendant sheets without internal IDs or lock fields', async () => {
   const state = seed();
+  state.employees=state.employees.filter(e=>e.id==='e8');
   state.rooms = [
     { id: 'a', number: '001', type: 'king', floor: 1, score: 1.25, flag: 'Departure' },
     { id: 'b', number: '002', type: 'suite', floor: 1, score: 2, flag: 'DND' },
@@ -65,12 +66,29 @@ test('room board workbook retains leading zeros, unassigned and DND rooms, fract
   const file = await buildRoomBoardExport(state, generatedAt);
   assert.equal(file.filename, 'easyman-room-board-2026-10-06.xlsx');
   const book = await open(file);
-  assert.deepEqual(book.worksheets.map(s => s.name), ['Attendant summary', 'Room assignments']);
+  assert.deepEqual(book.worksheets.map(s => s.name), ['Attendant summary', 'Room assignments', 'Sofia Martinez']);
   const rooms = book.getWorksheet('Room assignments');
   assert.equal(rooms.rowCount, 8);
   assert.equal(rooms.getCell('A6').value, '001');
   assert.equal(rooms.getCell('G6').value, 1.25);
-  assert.equal(rooms.getCell('H6').value, 'Yes');
+  assert.equal(rooms.getCell('F6').value, 'Marked clean');
+  assert.equal(rooms.getCell('B6').value, 'Floor 1');
+  assert.equal(rooms.getCell('B6').alignment.horizontal, 'left');
+  assert.equal(rooms.getCell('B6').alignment.indent, 1);
+  assert.equal(rooms.columnCount,7);
+  assert.equal(rooms.getCell('G6').numFmt,'0.00');
+  assert.ok(!allStrings(book).some(value=>/Attendant ID|Assignment locked|Locked rooms/.test(value)));
+  const slip=book.getWorksheet('Sofia Martinez');
+  assert.equal(slip.pageSetup.orientation,'portrait');
+  assert.equal(slip.pageSetup.paperSize,1);
+  assert.equal(slip.pageSetup.fitToWidth,1);
+  assert.equal(slip.pageSetup.fitToHeight,0);
+  assert.equal(slip.getCell('A6').value.result,'001');
+  assert.equal(slip.getCell('A7').value.result,'010');
+  assert.equal(slip.getCell('E6').value.result,'X');
+  assert.equal(slip.autoFilter,undefined);
+  assert.equal(slip.columnCount,5);
+  assert.equal(slip.getCell('A9').value,'Notes for your supervisor');
   assert.equal(rooms.getCell('D7').value, 'Unassigned');
   assert.equal(rooms.getCell('E7').value, 'DND');
   assert.equal(rooms.getCell('G8').value, 0);
@@ -79,7 +97,7 @@ test('room board workbook retains leading zeros, unassigned and DND rooms, fract
   assert.equal(summary.getCell('C6').value.result, 1.25);
   assert.equal(summary.getCell('D6').value.result, 1);
   assert.equal(summary.getCell('E6').value.result, 1);
-  assert.equal(summary.getCell('F6').value.result, 1);
+  assert.equal(summary.columnCount,5);
 });
 test('exports keep imported formula-like text literal and exclude unrelated personnel and availability records', async () => {
   const state = seed();
@@ -128,3 +146,5 @@ test('empty exports produce valid workbooks without invalid filters or missing d
     }
   }
 });
+
+test('attendant sheets keep duplicate names separate, sanitize tab names, exclude inactive/DND assignments and respect overrides',async()=>{const s=seed();s.employees=[{id:'one',name:"O'Brien / Team: [A] very long name repeated",position:'attendant',qualifications:['attendant'],active:true},{id:'two',name:"O'Brien / Team: [A] very long name repeated",position:'attendant',qualifications:['attendant'],active:true}];s.rooms=[{id:'a',number:'007',floor:0,zone:'East',type:'king',flag:'Departure',score:1},{id:'b',number:'008',floor:2,type:'suite',flag:'Departure',score:2},{id:'dnd',number:'009',floor:2,type:'king',flag:'DND',score:1},{id:'dormant',number:'010',floor:2,type:'king',flag:'Departure',score:1}];s.boards=[{id:'a',room:'a',employee:'one',status:'To clean',scoreOverride:1.5,flagOverride:'Early arrival'},{id:'b',room:'b',employee:'two',status:'Clean'},{id:'d',room:'dnd',employee:'one',status:'To clean',locked:true},{id:'z',room:'dormant',employee:'two',active:false}];const book=await open(await buildRoomBoardExport(s,generatedAt));const tabs=book.worksheets.slice(2);assert.equal(tabs.length,2);assert.equal(new Set(tabs.map(t=>t.name.toLowerCase())).size,2);for(const tab of tabs){assert.ok(tab.name.length<=31);assert.ok(!/[\\/*?:\[\]]/.test(tab.name));assert.equal(tab.getCell('A7').value,null);}assert.equal(tabs[0].getCell('A6').value.result,'007');assert.equal(tabs[1].getCell('A6').value.result,'008');const rooms=book.getWorksheet('Room assignments');assert.equal(rooms.getCell('B6').value,'Floor 0 · East');assert.equal(rooms.getCell('E6').value,'Early arrival');assert.equal(rooms.getCell('G6').value,1.5);assert.equal(rooms.getCell('D8').value,'Unassigned');assert.equal(rooms.getCell('F8').value,'Do not enter');assert.equal(rooms.getCell('D9').value,'Unassigned');assert.equal(book.getWorksheet('Attendant summary').getCell('B6').value.result,1);assert.match(book.getWorksheet('Attendant summary').getCell('B6').value.formula,/O’Brien/);});
