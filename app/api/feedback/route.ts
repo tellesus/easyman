@@ -1,4 +1,5 @@
 import { env } from 'cloudflare:workers';
+import {APP_VERSION} from '../../version';
 import { createPrivateKey, sign } from 'node:crypto';
 import { getChatGPTUser } from '../../chatgpt-auth';
 import { body, rate, response } from '../../team-server';
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
     issueRequestStarted = true;
     const issueResponse = await github(`/repos/${repository}/issues`, {
       method: 'POST', headers,
-      body: JSON.stringify({ title: `[${category.toUpperCase()}] ${subject.trim()}`, body: `Category: ${category}\nEasyMan Version: 0.2 dev\nModule: Developer feedback\nSubmitted: ${new Date().toISOString()}\nFeedback ID: ${id}\n\nDescription:\n\n${description.trim()}`, labels: [label.name] }),
+      body: JSON.stringify({ title: `[${category.toUpperCase()}] ${subject.trim()}`, body: `Category: ${category}\nEasyMan Version: ${APP_VERSION}\nModule: Developer feedback\nSubmitted: ${new Date().toISOString()}\nFeedback ID: ${id}\n\nDescription:\n\n${description.trim()}`, labels: [label.name] }),
     });
     if (!issueResponse.ok) { issueRequestStarted = issueResponse.status >= 500; throw new Error('Submission failed.'); }
     const issue = await issueResponse.json() as { number: number };

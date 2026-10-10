@@ -2,7 +2,7 @@
 
 **Take it easy, manager.** A responsive hotel operations workspace built from the supplied V1 product specification.
 
-Build 0.2 is a development release with seven modules, encrypted cloud storage, JSON imports, configuration backups, and a private GitHub feedback integration. See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for implemented behavior and the remaining production V1 requirements.
+Version 1.0.0 is a private release with seven modules, encrypted cloud storage, reviewed daily housekeeping imports, printable exports, recovery files and a private GitHub feedback integration. See [RELEASE_NOTES.md](RELEASE_NOTES.md), [IMPLEMENTATION.md](IMPLEMENTATION.md) and [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md) for release scope, validation and recovery.
 
 ## Develop
 
@@ -83,4 +83,4 @@ The custom domain connects to the existing private Sites project and property da
 
 ## Acceptance status — October 9, 2026
 
-Michael reported 12 of 13 live-domain workflow checks passed, including sign-in, same-account recovery, exports, feedback, record history, network interruption and scheduled snapshots while the app was closed. Housekeeping progress/locks/rebalancing/DND is the remaining item in that list. See [LIVE_TESTING.md](LIVE_TESTING.md) for the owner-reported results and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for finer-grained cases. Real-team and actual additional-device checks remain deferred. This records acceptance progress without creating a 1.0 release.
+Michael reported 12 passing live-domain checks, including same-account recovery, exports, feedback, record history, network interruption and scheduled snapshots with the app closed. Assistant release checks subsequently covered the revised housekeeping workflow, encrypted restoration into an empty property and publication history after template edits. Private 1.0.0 keeps the existing allowed account. See [LIVE_TESTING.md](LIVE_TESTING.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for separate owner/assistant evidence. Real-team, different-administrator recovery, actual devices and actual PMS/LLM compatibility remain deferred.

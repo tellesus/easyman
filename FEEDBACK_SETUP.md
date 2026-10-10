@@ -38,4 +38,4 @@ If GitHub's response is ambiguous, EasyMan blocks blind retries. A developer mus
 - [JWT issuer: Client ID or App ID](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app)
 - [Installing a GitHub App](https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party)
 
-The 1.0 release remains held while this setup and the other acceptance checks in `IMPLEMENTATION.md` are outstanding.
+Feedback is configured for private 1.0.0. Keep its destination private and all credentials in the hosted server environment. See IMPLEMENTATION.md and RELEASE_NOTES.md for validation and deferred checks.

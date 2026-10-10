@@ -1,6 +1,6 @@
 # EasyMan — live testing on easyman.app
 
-Prepared October 9, 2026 (America/Chicago). This is a controlled testing setup for the current 0.2 development build, not a 1.0 release.
+Original acceptance session: October 9, 2026 (America/Chicago). Updated for private 1.0.0 on October 10. The owner-reported results below remain a historical record; assistant release checks are recorded separately.
 
 ## Addresses and data
 
@@ -48,7 +48,15 @@ Michael reported these results on October 9, 2026 (America/Chicago): **12 passed
 
 The snapshot result includes a fresh scheduled background receipt, a capture with the app closed around a boundary, and frozen historical state afterward, as confirmed by Michael. This closes the previously unconfirmed scheduled-execution check.
 
-Use the detailed module checks in TESTING_CHECKLIST.md for additional cases beyond this acceptance list. Record failures with invented data, expected/actual behavior and a screenshot. Do not call the release 1.0 until the required acceptance items are reviewed.
+## Assistant release review — October 10, 2026
+
+The user authorized completing the release pass and publishing private 1.0.0. Assistant checks covered the revised housekeeping import/review/balance/progress/kept assignment/DND/history workflow, selected-date exports and LibreOffice handouts. The live six-room board was rebalanced from 1 / 3 / 4.25 to 3 / 3 / 2.25 points and reopened with those totals.
+
+A separate localhost test workspace started empty and stayed empty after reload. A synthetic encrypted working copy was previewed/restored there; room progress, a kept assignment, DND and the restored property survived reload. Actual isolated API handlers also verified encrypted restoration into an empty property. A local schedule was published, its shift template edited and its unchanged publication history inspected; the affected live schedule correctly returned to draft. No hotel records or account keys were cleared in the hosted app.
+
+The release candidate has 68 passing automated checks and passing TypeScript checks. The GitHub Actions browser view confirmed the pre-release commits had succeeded, despite the connector returning empty run lists. Final candidate CI/build and private deployment are verified before the v1.0.0 tag is created. Real-team, different-administrator, actual-device and actual PMS/LLM checks remain deferred. Unchecked detailed cases are not retrospectively marked passed.
+
+Use TESTING_CHECKLIST.md to extend validation beyond this release scope, and RECOVERY_AND_ROLLBACK.md for backups and recovery.
 
 ## Hosting record and rollback
 

@@ -46,7 +46,7 @@ export function housekeepingDay(state:State,date:string):State {
   const boards=state.boards.filter(b=>b.date===date||legacy&&!b.date);
   const catalog:Row[]=plan?.catalog||state.rooms;
   const rooms=catalog.filter(r=>r.active!==false).map(r=>{
-    const service=plan?.items.find((item:Row)=>item.room===r.id)?.service||(legacy?(r.flag==='Stayover'?'stayover':'departure'):boards.find(b=>b.room===r.id)?.service||'none');
+    const service=plan?(plan.items.find((item:Row)=>item.room===r.id)?.service||'none'):(legacy?(r.flag==='Stayover'?'stayover':'departure'):boards.find(b=>b.room===r.id)?.service||'none');
     const task=boards.find(b=>b.room===r.id);
     return {...r,service,score:task?.scoreOverride??r.score,flag:task?.flagOverride||(legacy?r.flag:service?serviceLabel(service):r.flag)};
   });

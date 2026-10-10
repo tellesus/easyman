@@ -1,6 +1,6 @@
-# EasyMan 0.2 development release
+# EasyMan 1.0.0 private release
 
-The remaining V1 application work is implemented as a development build. The final **1.0 release is held** pending the remaining housekeeping acceptance check and release review. On October 9, 2026, Michael reported 12 of 13 live-domain workflow checks passed, including scheduled snapshot execution and same-account recovery. The private feedback repository and GitHub App were configured and live-tested on October 9, 2026. This document distinguishes implementation from infrastructure setup and validation.
+The V1 application work is implemented for a **private 1.0.0 release**, authorized on October 10, 2026. Release checks preserve the existing hosting audience and document deferred real-team/device/PMS validation. On October 9, 2026, Michael reported 12 of 13 live-domain workflow checks passed, including scheduled snapshot execution and same-account recovery. The private feedback repository and GitHub App were configured and live-tested on October 9, 2026. This document distinguishes implementation from infrastructure setup and validation.
 
 ## Implemented workflows
 
@@ -15,7 +15,7 @@ The remaining V1 application work is implemented as a development build. The fin
 - Employee files accessible from names in desktop and mobile schedules, encrypted split-days-off scheduling preference, employee creation/editing, additional department affiliations and position qualifications, availability restrictions, and position-based or individual reporting relationships. Circular reporting paths are rejected.
 - Manual department, position, shift, room-type, staffing-rule and room configuration. Referenced items cannot be removed. Positions and requirements can be disabled. Staffing rules support weekday and date-range overrides.
 - Validated JSON imports with schema/example/conversion prompt, preview, reference checks, calendar validation, resource limits, and explicit commit. Unsupported employee fields are rejected rather than silently shared.
-- Encrypted and explicitly acknowledged unencrypted configuration exports, safe backup restoration, missing-default merging, default restoration, encrypted working-copy export and previewed merge restoration.
+- Encrypted and explicitly acknowledged unencrypted configuration exports, backup restoration, missing-default merging, default restoration and previewed working-copy merges. Working-copy recovery aligns daily plans/tasks, deduplicates room/date identities, preserves current immutable snapshots and retains replaced personnel content as a revision. Restored schedule changes and referenced shift-template/time-zone edits return affected weeks to draft while published history remains unchanged.
 - Feedback compose/review, encrypted draft persistence, idempotent server-side GitHub App submission, repository-privacy verification, and failure/uncertain-submission handling. The three categories remain Pain Point, Bug, and Feature Request.
 
 ## Team access and encryption
@@ -44,13 +44,14 @@ The snapshot service reconstructs pass-on state at a configured boundary from cu
 
 `/mcp` exposes owner-authenticated `capture_shift_snapshots` and read-only `snapshot_status`. The private EasyMan connector is connected and an authenticated capture call was verified. The linked hourly background task captures due boundaries; every completed non-browser check records a metadata-only receipt, even when no new snapshot is due. Shift pass-on → Snapshots displays that receipt without creating one. The service records exact boundary timestamps and state, but scheduled task start times can be delayed by the scheduler. Catch-up resumes from the latest captured boundary (or property creation), processing up to 31 calendar days per run so a later run can continue a longer outage. There is no push, email or SMS notification system in the app.
 
-## Deployment/setup still required before 1.0
+## Release verification and deferred validation
 
 1. **Feedback setup complete:** the private repository `tellesus/easyman-feedback`, GitHub App and server secrets are configured. The live form created a labeled synthetic issue; actual-handler checks against GitHub verified the other two categories and retries with no duplicate creation, using an isolated test database. All synthetic issues were closed. See [FEEDBACK_SETUP.md](FEEDBACK_SETUP.md). The public source repository must not receive hotel feedback automatically.
 2. **Snapshot acceptance complete (owner-reported):** Michael confirmed a fresh receipt after a scheduled run, capture with the app closed around a boundary, and frozen historical state afterward. Connection and authenticated capture were already assistant-verified.
 3. Real-team acceptance is deferred at the owner's request. Current tests use this computer and isolated synthetic accounts. Later, verify private Site access, invitations and actual different-user permissions; app membership does not change the hosting audience.
 4. **Same-account recovery accepted (owner-reported):** recovery and reload worked on this computer, and missing/wrong files or passphrases did not replace the stored key. Continue retaining recovery files safely. Administrator-assisted recovery with a different administrator remains deferred.
-5. **Remaining live-domain check:** fictional housekeeping progress, assignment locking, rebalancing and DND behavior. Michael accepted export checks in the spreadsheet applications available on this computer; LibreOffice was explicitly demonstrated. The revised attendant handouts were subsequently printed through LibreOffice and checked by the assistant. Unavailable spreadsheet applications and actual additional devices remain unverified/deferred.
+5. **Assistant housekeeping verification:** fictional imports, unknown/conflicting room review, workload balancing, kept assignments, progress, DND, same-day updates, dated history and attendant handouts were checked locally; the reported live-board imbalance was corrected and survived reload. Michael accepted exports in the available spreadsheet applications; LibreOffice handout printing was assistant-verified. Actual PMS/LLM outputs and unavailable spreadsheet applications remain deferred.
+6. **Focused release checks:** an empty local property persisted after reload; an encrypted synthetic working copy was previewed, restored and reopened with progress/kept assignments/DND intact. Actual isolated storage handlers also verified restoration into an empty property. Published schedule history retained its original shifts after a template edit, and the affected live schedule became draft. The release candidate passes 68 automated checks and TypeScript checks; the final production build and exact GitHub candidate checks are required before tagging.
 
 ## Validation
 

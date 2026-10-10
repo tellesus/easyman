@@ -144,4 +144,15 @@ export function validateImport(type:string,input:unknown,state:State):Row[] {
 }
 export function mergeRows(current:Row[],incoming:Row[]) {const map=new Map(current.map(r=>[r.id,r]));incoming.forEach(r=>map.set(r.id,{...map.get(r.id),...r}));return [...map.values()];}
 
+export function invalidateChangedShiftPublications(previous:State,next:State):State {
+  const signature=(shift:Row|undefined)=>shift?JSON.stringify([shift.name,shift.start,shift.end,Number(shift.hours),shift.active!==false]):'';
+  const ids=new Set([...previous.config.shifts,...next.config.shifts].map(shift=>shift.id));
+  const changed=new Set([...ids].filter(id=>previous.config.timezone!==next.config.timezone||signature(previous.config.shifts.find(s=>s.id===id))!==signature(next.config.shifts.find(s=>s.id===id))));
+  if(!changed.size)return next;
+  const weeks=new Set(next.schedule.filter(row=>changed.has(row.shift)).map(row=>monday(row.date)));
+  if(!weeks.size)return next;
+  const publishedWeeks=(next.publishedWeeks||(next.published?[next.week]:[])).filter(week=>!weeks.has(week));
+  return {...next,publishedWeeks,published:publishedWeeks.includes(next.week),publications:next.publications?.map(p=>({...p,publishedWeeks:(p.publishedWeeks||[]).filter((week:string)=>!weeks.has(week))}))};
+}
+
 function validCalendarDate(value:string){try{return /^\d{4}-\d{2}-\d{2}$/.test(value)&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;}catch{return false;}}

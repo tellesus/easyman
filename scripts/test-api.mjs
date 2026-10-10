@@ -8,7 +8,11 @@ import path from 'node:path';
 import { registerHooks } from 'node:module';
 import { build } from 'esbuild';
 registerHooks({resolve(specifier,context,next){return next(specifier.startsWith('./')&&!/\.(ts|js|mjs)$/.test(specifier)&&context.parentURL?.includes('/app/')?specifier+'.ts':specifier,context);}});
-const {newIdentity,seal,openResource}=await import('../app/team-crypto.ts');
+const {newIdentity,seal,openResource,emptyState,resources,directory,decode}=await import('../app/team-crypto.ts');
+const {seed,today}=await import('../app/domain.ts');
+const {applyDaySetup,housekeepingDay,updateDayTask}=await import('../app/housekeeping.ts');
+const {restoreWorkingCopy}=await import('../app/working-copy.ts');
+const {encryptBackup,decryptBackup}=await import('../app/vault.ts');
 const {profileGrants}=await import('../app/access.ts');
 const sql=new DatabaseSync(':memory:');
 for(const file of readdirSync('drizzle').filter(f=>f.endsWith('.sql')).sort())sql.exec(readFileSync('drizzle/'+file,'utf8'));
@@ -120,4 +124,16 @@ test('daily housekeeping plans and dated tasks persist through the real API with
   const visible=(await call(reader,'team-workspace','GET',undefined,'?property='+actor)).value;assert.equal(visible.resources.length,2);assert.ok(visible.resources.every(r=>r.field==='boards'));assert.deepEqual((await Promise.all(visible.resources.map(r=>openResource(r,scoped,reader)))).map(v=>v.date).sort(),['2026-10-10','2026-10-11']);
   const denied=await call(reader,'team-workspace','PUT',{propertyId:actor,revision:visible.revision,records:[records.find(r=>r.field==='housekeepingDays')],deleted:[]});assert.equal(denied.status,403);
   const reopened=(await call(actor,'team-workspace')).value;assert.equal(reopened.resources.filter(r=>r.field==='housekeepingDays').length,2);
+});
+
+test('release recovery restores an encrypted backup into an empty isolated property through actual storage routes',async()=>{
+  const actor='release-recovery-owner',identity=await newIdentity(),empty=emptyState();empty.config.name='TEST empty recovery property';empty.config.sample=false;
+  await call(actor,'team-workspace');assert.equal((await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);
+  assert.equal((await call(actor,'team-workspace','POST',{action:'create',directory:directory(empty),timezone:empty.config.timezone,boundaries:empty.config.boundaries})).status,200);
+  async function saveState(state){const context=(await call(actor,'team-workspace')).value,records=[];for(const item of resources(state,actor))records.push(await seal(item.value,identity,context.members,{id:item.id,field:item.field,subject:item.subject,propertyId:actor,revision:0},directory(state)));const result=await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records,deleted:[],directory:directory(state)});assert.equal(result.status,200,JSON.stringify(result.value));}
+  await saveState(empty);const reopenedEmpty=await decode((await call(actor,'team-workspace')).value.resources,identity,actor);assert.equal(reopenedEmpty.rooms.length,0);assert.equal(reopenedEmpty.sample,false);
+  const source=seed(),day=today(source.config.timezone);source.config.name='TEST restored property';let backup=applyDaySetup(source,day,[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'stayover'}]);backup=updateDayTask(backup,day,'r0',{status:'Clean',locked:true});
+  const encrypted=await encryptBackup(backup,'TEST ONLY release restore passphrase');await assert.rejects(()=>decryptBackup(encrypted,'wrong passphrase'));
+  const copy=await decryptBackup(encrypted,'TEST ONLY release restore passphrase'),restored=restoreWorkingCopy(reopenedEmpty,copy,'TEST owner');await saveState(restored);
+  const reopened=await decode((await call(actor,'team-workspace')).value.resources,identity,actor),view=housekeepingDay(reopened,day);assert.equal(reopened.config.name,'TEST restored property');assert.equal(reopened.sample,true);assert.equal(reopened.rooms.length,24);assert.equal(view.boards.filter(b=>b.active!==false).length,2);assert.equal(view.boards.find(b=>b.room==='r0').status,'Clean');assert.equal(view.boards.find(b=>b.room==='r0').locked,true);assert.deepEqual(reopened.schedule.map(r=>r.id).sort(),backup.schedule.map(r=>r.id).sort());
 });

@@ -1,4 +1,5 @@
 import { getChatGPTUser } from '../chatgpt-auth';
+import {APP_VERSION} from '../version';
 import { body } from '../team-server';
 import { captureDueSnapshots, snapshotStatus } from '../snapshot-server';
 const tools=[
@@ -11,7 +12,7 @@ export async function POST(request:Request){
   const id=message.id??null;
   const reply=(result:unknown)=>Response.json({jsonrpc:'2.0',id,result},{headers:{'Cache-Control':'no-store'}});
   if(message.method==='server/discover')return reply({supportedVersions:['2026-07-28'],capabilities:{tools:{}}});
-  if(message.method==='initialize')return reply({protocolVersion:message.params?.protocolVersion==='2026-07-28'?'2026-07-28':'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'EasyMan',version:'0.2'}});
+  if(message.method==='initialize')return reply({protocolVersion:message.params?.protocolVersion==='2026-07-28'?'2026-07-28':'2024-11-05',capabilities:{tools:{}},serverInfo:{name:'EasyMan',version:APP_VERSION}});
   if(message.method==='notifications/initialized')return new Response(null,{status:202});
   if(message.method==='tools/list')return reply({tools});
   if(message.method==='tools/call'){

@@ -31,7 +31,7 @@ Use this checklist together, one section at a time. Use the sample property and 
 - [ ] **S03 — Infeasible staffing:** Request more qualified people than are available. Expect uncovered staffing to be reported instead of violating hard restrictions.
 - [ ] **S04 — Manual edits:** Add, change and remove a test assignment. Expect valid edits to persist and invalid assignments to be rejected with an explanation.
 - [x] **S05 — Partial regeneration:** Regenerate selected days only. Expect unselected days to remain identical and still constrain overlap, rest and weekly hours.
-- [ ] **S06 — Publish:** Publish a draft, then change a draft assignment or shift template. Expect the publication/history to retain the originally published assignment and shift times.
+- [x] **S06 — Publish (assistant local release check, October 10):** Publish a draft, then change a draft assignment or shift template. Expect the publication/history to retain the originally published assignment and shift times.
 - [ ] **S07 — Schedule XLSX:** Export the selected week and open it in a spreadsheet app available on this computer. Expect a valid workbook, the correct week, separate employees even when names match, numeric totals and correct next-day end dates for overnight shifts.
 
 ## 4. Rooms, housekeeping and its spreadsheet
@@ -83,7 +83,15 @@ Use this checklist together, one section at a time. Use the sample property and 
 
 ## Automated checks we can run here
 
-The local suite covers schedule constraints/partial regeneration, imports, encryption and recovery-file passphrases, workbook structure, scope/recipient rules, session revocation, stale writes, feedback retries, exact historical snapshot state, background receipts, owner-only snapshot tools and bounded catch-up. These use isolated synthetic accounts/data. Latest assistant-run unit/API result: **59 tests passed; type check passed** for dated housekeeping imports, preservation of legacy boards, progress/holds/kept assignments, selected-date exports and encrypted scope enforcement. The fictional local browser walkthrough verified prompt copying, paste/upload, blocked unknown rooms, explicit exclusion, same-day re-import, rebalance, DND, manual setup of a fresh day, and previous-day persistence after reload. The revised dated workbook was recalculated independently with no formula errors and printed through native LibreOffice: three portrait Letter handouts with the selected date and five active rooms, excluding the DND hold and no-service rooms. No actual PMS export or external LLM was available; the conversion fixture was hand-prepared. These assistant checks do not replace the owner acceptance check.
+The local suite covers schedule constraints/partial regeneration, imports, encryption and recovery-file passphrases, workbook structure, scope/recipient rules, session revocation, stale writes, feedback retries, exact historical snapshot state, background receipts, owner-only snapshot tools and bounded catch-up. These use isolated synthetic accounts/data. Latest assistant-run unit/API result: **68 tests passed; type check passed** for dated housekeeping imports, preservation of legacy boards, progress/holds/kept assignments, selected-date exports and encrypted scope enforcement. The fictional local browser walkthrough verified prompt copying, paste/upload, blocked unknown rooms, explicit exclusion, same-day re-import, rebalance, DND, manual setup of a fresh day, and previous-day persistence after reload. The revised dated workbook was recalculated independently with no formula errors and printed through native LibreOffice: three portrait Letter handouts with the selected date and five active rooms, excluding the DND hold and no-service rooms. No actual PMS export or external LLM was available; the conversion fixture was hand-prepared. These assistant checks do not replace the owner acceptance check.
+
+## Focused private 1.0 release evidence — October 10, 2026
+
+- Empty-property setup and reload: passed in a separate localhost browser origin, using fictional data.
+- Encrypted working-copy preview, confirmation and reload: passed in that isolated browser; restored property, progress, kept assignment and DND were verified. Wrong-passphrase rejection and coherent restoration into an empty property also passed through actual isolated storage handlers.
+- Publication history after a shift-template edit: original history unchanged; affected live week became draft. Working-copy schedule changes preserve immutable publications and also return affected weeks to draft.
+- Revised housekeeping workflows and printable exports: assistant-verified as described above; the owner's original 12-of-13 report remains separate.
+- Unchecked detailed cases are not assumed passed. The user authorized a private release with real-team/device/PMS validation deferred.
 
 ## Deferred until additional accounts or devices are available
 
