@@ -1,4 +1,6 @@
 import { mergeRows, managementGraph, validateImport, uid, type Row, type State } from './domain';
+import {invalidateWeek,isOvernight} from './staffing';
+import {effectiveShift,today,monday} from './domain';
 
 // Simple controls edit only rules they can represent. Richer imported rules stay
 // separate so a profile or checkbox edit cannot silently discard them.
@@ -7,7 +9,7 @@ export const simpleUnavailableWeekdays = (row:Row) => Array.isArray(row.weekdays
 export function saveEmployeeProfile(state:State, original:Row, data:FormData, rights:{scheduling:boolean;configuration:boolean}) {
   const val=(key:string)=>String(data.get(key)||'').trim(),id=original.id||uid();
   const employee:Row={...original,id,name:val('name'),department:val('department'),departments:[...new Set([val('department'),...data.getAll('departments').map(String)])],position:val('position'),active:val('active')==='true',qualifications:[...new Set([val('position'),...data.getAll('qualifications').map(String)])]};
-  if(rights.scheduling)Object.assign(employee,{hire:val('hire'),preferred:val('preferred'),splitDaysOffOK:data.has('splitDaysOffOK'),hours:Number(val('hours'))});
+  if(rights.scheduling)Object.assign(employee,{hire:val('hire'),preferred:val('preferred'),splitDaysOffOK:data.has('splitDaysOffOK'),overnightOK:data.has('overnightOK'),hours:Number(val('hours'))});
   const employees=mergeRows(state.employees,[employee]);
   let reporting=state.reporting,availability=state.availability;
   if(rights.configuration){
@@ -34,5 +36,7 @@ export function saveEmployeeProfile(state:State, original:Row, data:FormData, ri
     availability=state.availability.flatMap(row=>row.employee!==id?[row]:replacements.has(row.id)?[replacements.get(row.id)!]:[]);
     availability.push(...rows.filter(row=>!state.availability.some(old=>old.id===row.id)));
   }
-  return {...state,employees,reporting,availability};
+  let next={...state,employees,reporting,availability};
+  if(original.overnightOK===true&&employee.overnightOK!==true){for(const a of state.schedule.filter(a=>a.employee===id&&a.date>=today(state.config.timezone)&&effectiveShift(state,a)&&isOvernight(effectiveShift(state,a)!)))next=invalidateWeek(next,monday(a.date));}
+  return next;
 }

@@ -30,7 +30,7 @@ test('manual weekly-limit overrides require acknowledgment and a reason, retain 
   s.availability=[{id:'off',employee:'one',date:days(s.week)[5]}];assert.throws(()=>manualAssignment(s,{id:''},f,allow),/unavailable/);
 });
 test('custom manual times affect overlap, rest, weekly hours, summary and XLSX while preserving the template',async()=>{
-  const s=fixture(),template=structuredClone(s.config.shifts[0]),f=form({customTimes:'on',start:'23:00',end:'03:00',hours:'3.5'}),saved=manualAssignment(s,{id:''},f,allow);s.schedule=[saved];
+  const s=fixture();s.employees[0].overnightOK=true;const template=structuredClone(s.config.shifts[0]),f=form({customTimes:'on',start:'23:00',end:'03:00',hours:'3.5'}),saved=manualAssignment(s,{id:''},f,allow);s.schedule=[saved];
   assert.deepEqual(s.config.shifts[0],template);assert.equal(effectiveShift(s,saved).hours,3.5);
   const next=form({date:'2026-10-06'});assert.throws(()=>manualAssignment(s,{id:''},next,allow),/11 hours/);next.set('overrideWarnings','on');next.set('overrideReason','TEST rest override');const overridden=manualAssignment(s,{id:''},next,allow);assert.ok(overridden.override.warnings.some(w=>w.includes('11 hours')));
   const overlap=form({date:'2026-10-06',customTimes:'on',start:'02:00',end:'10:00',hours:8,overrideWarnings:'on',overrideReason:'TEST'});assert.throws(()=>manualAssignment(s,{id:''},overlap,allow),/overlaps/);

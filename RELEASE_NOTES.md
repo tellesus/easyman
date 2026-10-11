@@ -1,5 +1,7 @@
 # EasyMan development notes toward 1.0
 
+October 11 scheduling extension implements the owner's approved update: daily staffing defaults, independent saved weekly demand, explicit overnight eligibility, automatic gap-resolution dialog, deliberate Manager coverage, combined manual warnings/override reasons and adjacent-week rest checks. Manager entries and demand are encrypted, permission-checked and included in publication history/XLSX; the isolated demo uses the same workflow. Existing Manager commitments remain fixed during regeneration. See SCHEDULING_GUIDE.md and the new test-staffing/API regressions. This feature update does not create an official 1.0 release.
+
 Updated October 10, 2026 (America/Chicago). EasyMan is intended for real hotel operations; current local/hosted use is development and testing with fictional data and no customers. The package, app and feedback metadata use `1.0.0`. Prior wording that treated this as a completed private release or full feature acceptance is superseded by this status record.
 
 GitHub's releases listing returned no published releases when checked on October 10. This documentation update does not create a release/tag or change the hosting audience. [CURRENT_SPEC.md](CURRENT_SPEC.md) is the requirements source; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) and [ROADMAP.md](ROADMAP.md) record unfinished work.

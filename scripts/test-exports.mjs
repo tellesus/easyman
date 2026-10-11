@@ -39,7 +39,7 @@ test('schedule workbook limits export to the selected week and preserves overnig
   const file = await buildScheduleExport(state, generatedAt);
   assert.equal(file.filename, 'easyman-schedule-2026-10-05-to-2026-10-11.xlsx');
   const book = await open(file);
-  assert.deepEqual(book.worksheets.map(s => s.name), ['Weekly schedule', 'Shift details']);
+  assert.deepEqual(book.worksheets.map(s => s.name), ['Weekly schedule', 'Shift details', 'Staffing needs']);
   const details = book.getWorksheet('Shift details');
   assert.equal(details.rowCount, 7);
   assert.equal(details.getCell('E6').value.toISOString(), '2026-10-05T00:00:00.000Z');
@@ -135,6 +135,7 @@ test('duplicate employee names remain separate and zero-assignment employees sho
 });
 test('empty exports produce valid workbooks without invalid filters or missing data sheets', async () => {
   const state = seed();
+  state.config.staffing = [];
   state.employees = [];
   state.schedule = [];
   state.rooms = [];

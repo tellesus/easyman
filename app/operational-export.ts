@@ -12,7 +12,7 @@ export function prepareOperationalExport(state:State,member:Member|null,kind:Kin
   const copy=structuredClone(state);if(!member)return copy;
   const dir=directory(state),view=kind==='schedule'?'Scheduling.View':'HousekeepingBoards.View',allowed=(subject:string)=>permits(member,view,subject,dir)&&permits(member,'OperationalData.Export',subject,dir);
   copy.employees=copy.employees.filter(e=>allowed(e.id));
-  if(kind==='schedule'){copy.schedule=copy.schedule.filter(a=>allowed(a.employee));copy.publications=copy.publications?.filter(p=>allowed(p.employee));copy.published=copy.publications?.length?copy.publications.every(p=>p.publishedWeeks.includes(copy.week)):copy.published;}
+  if(kind==='schedule'){copy.schedule=copy.schedule.filter(a=>allowed(a.employee));copy.publications=copy.publications?.filter(p=>allowed(p.employee));copy.published=copy.publications?.length?copy.publications.every(p=>p.publishedWeeks.includes(copy.week)):copy.published;if(!allowed('')){copy.staffingWeeks=[];copy.config.staffing=[];}}
   else{copy.boards=copy.boards.filter(b=>allowed(b.employee||''));if(!allowed(''))copy.rooms=copy.rooms.filter(r=>copy.boards.some(b=>b.room===r.id));}
   return copy;
 }

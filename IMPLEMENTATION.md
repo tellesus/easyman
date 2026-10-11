@@ -1,5 +1,7 @@
 # EasyMan implementation status
 
+October 11, 2026: approved staffing extension is implemented with local workflow verification. `app/staffing.ts`, `app/staffing-ui.tsx` and the existing scheduling/employee/domain modules provide daily defaults, frozen weekly needs, hard overnight eligibility, guided missing-shift decisions, general Manager assignments and combined manual warnings. Shared weekly and Manager records require property-wide scheduling scope; individual employee scopes are retained. Encrypted API regressions verify storage/access/history; XLSX and the isolated demo use the same domain logic. TypeScript and all **121 tests** pass. Earlier test counts predate this extension. See SCHEDULING_GUIDE.md and LIVE_TESTING.md for verification limits.
+
 Documentation aligned October 10, 2026. Application review baseline: `7e283d3617701c7379dc63ed47c58bb5c67fba65` (managed source), mirrored by GitHub commit `064791a8c9465454ab0109c111ad59e8350914f8`. All 14 actionable original review findings and C1/C2 are resolved with local verification. The review baseline remains the historical reference for the original findings.
 
 EasyMan is being built for real hotel operations. Today it is in development/testing with fictional records and no customers. The package/app/feedback metadata value `1.0.0` is not a declaration that the agreed V1 workflows are complete. The current requirements are in [CURRENT_SPEC.md](CURRENT_SPEC.md), with pending work in [ROADMAP.md](ROADMAP.md).

@@ -1,5 +1,7 @@
 # EasyMan interactive demo
 
+October 11 scheduling extension: the shared demo includes daily staffing grids/defaults/weekly overrides, overnight eligibility, gap decisions and Manager commitments, warning acknowledgment, publication history and the Staffing needs XLSX sheet. These use the same memory-only runtime; no operational requests or persistent browser writes are added. See [SCHEDULING_GUIDE.md](SCHEDULING_GUIDE.md). The original 107-test verification below predates this extension.
+
 The owner-approved public playground is **https://demo.easyman.app/**. The product website is **https://easyman.app/** and registered-user access remains **https://easyman.app/app**. The demo is a fictional hotel, not a public shared property or a customer-service launch.
 
 ## Behavior

@@ -1,6 +1,6 @@
 # EasyMan current product specification
 
-Aligned with the owner's decisions through October 10, 2026. **This is the current requirements document.** [IMPLEMENTATION.md](IMPLEMENTATION.md) describes the code present today; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records its known gaps; [ROADMAP.md](ROADMAP.md) orders the remaining work.
+Aligned with the owner's decisions through October 11, 2026. **This is the current requirements document.** [IMPLEMENTATION.md](IMPLEMENTATION.md) describes the code present today; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records its known gaps; [ROADMAP.md](ROADMAP.md) orders the remaining work.
 
 ## Product intent and current stage
 
@@ -53,6 +53,14 @@ The hotel can use its IT-approved external LLM to prepare an import. EasyMan sup
 Provide encrypted configuration backup by default and explicitly acknowledged plaintext export with the appropriate audit event. Support restoring defaults with clear consequences and copying missing defaults into existing configuration without overwriting customization. Working-copy restoration must keep related records consistent and respect normal immutable histories. Granular per-item/per-module default restoration remains outside core V1.
 
 ## Scheduling
+
+Owner update approved October 11, 2026: provide a Monday–Sunday staffing grid by position and configured shift (including Morning, Mid, Evening and Overnight), with whole-number counts from 0 to 100. Property defaults seed each planned week; saved weekly requirements are independent of later default changes and can be edited or reset explicitly. Demand changes return published weeks to draft without deleting assignments or rewriting published history. Coverage, generation, gap resolution and exports use the same saved requirements.
+
+Employees have an unchecked-by-default **Can work overnight shifts** flag, separate from shift preference. Overnight templates are explicitly identified; custom times crossing midnight also require eligibility. Generation, manual additions, reassignment and time edits enforce this hard restriction. Removing eligibility flags affected future assignments for correction without silently deleting them or modifying historical publications.
+
+After full or partial generation, automatically open **Resolve missing shifts** when selected dates have gaps. Show date, position, shift times and missing count. Offer eligible employees, deliberate general **Manager** coverage, or leave unfilled. Recompute after every choice; closing preserves the draft and leaves a resume action. Never automatically insert Manager coverage. Manager entries are actual coverage records, not fictional employees; include them in views, totals, exports and immutable publication history without claiming person-specific hours/rest compliance.
+
+Manual assignments display all applicable overtime/maximum-hour, newly split-days-off (unless consent is enabled), and actual neighboring-shift rest/clopen warnings, including adjacent weeks. Require acknowledgment and a recorded reason before overriding warnings. Unavailability, qualifications, overlaps, overnight eligibility and authority cannot be overridden. Property defaults require configuration authority; shared weekly requirements and general Manager coverage require property-wide scheduling authority. Employee assignments retain existing scope enforcement. Apply the same feature to the isolated memory-only public demo.
 
 Generate an editable weekly draft using configured shifts, staffing needs, qualifications and availability. Mandatory constraints include unavailability, qualification and configured restrictions; preferences must not override them. Respect configured hours/rest expectations and explain coverage gaps or unmet preferences.
 

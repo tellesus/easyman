@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {weekRequirements,isManagerCoverage} from './staffing';
 import { effectiveShift, days, type State, type Row } from './domain';
 
 const GREEN = 'FF355F49';
@@ -101,7 +102,7 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
     const shift = effectiveShift(state,a);
     const assignedPosition = state.config.positions.find(p => p.id === a.position);
     details.addRow([
-      text(a.employee), employeeName(state, a.employee), nameFor(state.config.departments, assignedPosition?.department || employee?.department || ''),
+      text(a.employee), isManagerCoverage(a)?'Manager':employeeName(state, a.employee), nameFor(state.config.departments, assignedPosition?.department || employee?.department || ''),
       nameFor(state.config.positions, a.position), dateValue(a.date), shift ? text(shift.name) : 'Unknown shift',
       shift ? timeValue(shift.start) : null, dateValue(shift && shift.end <= shift.start ? nextDate(a.date) : a.date),
       shift ? timeValue(shift.end) : null, number(shift?.hours), status,
@@ -110,7 +111,7 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
   finish(details, assignments.length);
   const employees = state.employees.filter(e => assignments.some(a => a.employee === e.id) || e.active !== false && state.config.staffing.some(r => (e.qualifications || [e.position]).includes(r.position)));
   // Preserve orphaned assignments in the overview as well as in the detailed sheet.
-  for (const a of assignments) if (!employees.some(e => e.id === a.employee)) employees.push({ id: a.employee, name: 'Unassigned', position: '', department: '' });
+  for (const a of assignments) if (!employees.some(e => e.id === a.employee)) employees.push({ id: a.employee, name: isManagerCoverage(a)?'Manager':'Unassigned', position: '', department: '' });
   const lastDetail = Math.max(6, assignments.length + 5);
   for (const e of employees) {
     const own = assignments.filter(a => a.employee === e.id);
@@ -122,10 +123,16 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
       }).join('\n') || 'Day off'),
       null, text(e.id),
     ]);
-    row.getCell(11).value = { formula: `SUMPRODUCT(('Shift details'!$A$6:$A$${lastDetail}=L${row.number})*'Shift details'!$J$6:$J$${lastDetail})`, result: own.reduce((total, a) => total + number(effectiveShift(state,a)?.hours), 0) };
+    row.getCell(11).value = e.id===''?'General coverage':{ formula: `SUMPRODUCT(('Shift details'!$A$6:$A$${lastDetail}=L${row.number})*'Shift details'!$J$6:$J$${lastDetail})`, result: own.reduce((total, a) => total + number(effectiveShift(state,a)?.hours), 0) };
     row.height = Math.max(64, ...dates.map(d => own.filter(a => a.date === d).length * 44));
   }
   finish(overview, employees.length, 68);
+  const needs=sheet(book,'Staffing needs','Daily staffing needs',context,'Manager entries count as coverage commitments, not individual hour/rest checks. Requirements are saved for this week.',[
+    {label:'Date',width:17,format:'yyyy-mm-dd'},{label:'Position',width:27},{label:'Shift',width:20},{label:'People needed',width:18,format:'0'},{label:'Assigned',width:15,format:'0'},{label:'Missing',width:15,format:'0'},
+  ]);
+  const required=weekRequirements(state);
+  for(const r of required){const assigned=assignments.filter(a=>a.date===r.date&&a.position===r.position&&a.shift===r.shift).length;needs.addRow([dateValue(r.date),nameFor(state.config.positions,r.position),nameFor(state.config.shifts,r.shift),r.count,assigned,Math.max(0,r.count-assigned)]);}
+  finish(needs,required.length);
   return result(book, `easyman-schedule-${dates[0]}-to-${dates[6]}.xlsx`);
 }
 

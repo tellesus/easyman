@@ -1,5 +1,17 @@
 # EasyMan testing checklist — one computer
 
+October 11 staffing extension checks (fictional records):
+
+- [x] Focused regressions: aggregate demand, daily zero/mid targets, frozen week/default independence, explicit reset, nonnegative integer validation and authority.
+- [x] Overnight eligibility: preference/name do not confer permission; generation/manual/custom overnight times enforce it; removing permission preserves shifts/history and drafts affected future weeks.
+- [x] Manual decisions: combined maximum/overtime/split-day warnings require acknowledgment/reason; consent suppresses only the split warning; actual rest includes both adjacent weeks; eligibility, availability, qualifications and overlaps remain blocking.
+- [x] Actual encrypted API save/readback: weekly requirements, overnight flag, Manager coverage and immutable publications survive; scoped shared-record edits and historical rewrites are denied.
+- [x] Browser walkthrough: extra weekly demand automatically opens gaps; deliberate Manager coverage, defer/resume, independent property-default changes and publication history work. Actual XLSX downloaded; demo network/storage probes remain zero.
+- [x] Narrow 390px browser: staffing grid scrolls locally without page overflow; overnight checkbox reflects the fictional employee's saved permission. Actual mobile hardware remains unavailable.
+- [x] XLSX contents: Manager commitments, overnight end dates, numeric staffing needs; scoped exports omit inaccessible shared demand/Manager rows.
+- [x] Working-copy restoration preserves weekly requirements and drafts changed targets without rewriting history.
+- [x] Updated main and static demo native deployments succeeded; the canonical demo shows the new grid, automatically opens an overnight gap, accepts deliberate Manager coverage and returns to full coverage. Published isolation manifest excludes live account/storage modules. See LIVE_TESTING.md.
+
 EasyMan is being built for reliable use by real hotel managers and teams. It is currently in development with fictional data and no customers. Test the intended product in [CURRENT_SPEC.md](CURRENT_SPEC.md); current defects are recorded in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 These boxes are a fresh run template. Earlier owner and assistant results remain in [LIVE_TESTING.md](LIVE_TESTING.md), with their dates and limits. A passed check is evidence for its recorded scenario/build, not certification of an entire feature. Keep known failures open until their fixes are verified.

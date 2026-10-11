@@ -1,5 +1,7 @@
 # EasyMan
 
+Scheduling now supports daily staffing defaults and independent weekly requirements, explicit overnight eligibility, guided missing-shift decisions including general Manager coverage, and combined manual warnings. See [SCHEDULING_GUIDE.md](SCHEDULING_GUIDE.md) for the workflow. Earlier test counts below describe their historical batches.
+
 **Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
 
 EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. All 14 actionable original review findings and completeness checks C1/C2 are fixed and locally verified; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).

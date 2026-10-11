@@ -1,5 +1,7 @@
 # Public website and signed-in app
 
+October 11: scheduling feature copy now describes daily staffing targets, overnight eligibility and deliberate missing-shift decisions. The linked isolated demo shares the new workflow; website/app/demo routes, audiences and storage separation are retained. Earlier verification counts below are historical.
+
 Owner-approved update: a professional public introduction at **https://easyman.app/**, with a separate playable demo at https://demo.easyman.app/. This updates the product specification; it does not announce an official 1.0 release or customer availability.
 
 - `/`: public landing page with features, illustrated fictional workflow previews, PMS-file preparation and spreadsheet export explanations, scope, privacy/key recovery, FAQs, development status and source/license links.

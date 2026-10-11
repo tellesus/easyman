@@ -1,10 +1,12 @@
 import {mergeRows,monday,type Row,type State} from './domain';
 import {validDay} from './housekeeping';
+import {validateStaffingWeek} from './staffing';
 
 const requiredFields=['employees','rooms','passon','checks','training','discipline','schedule','boards','snapshots','availability','reporting'] as const;
 export function validateWorkingCopy(copy:any){
   if(!copy||typeof copy!=='object'||!copy.config)throw new Error('Choose a complete EasyMan working copy.');
   for(const field of requiredFields)if(!Array.isArray(copy[field])||copy[field].length>10000||copy[field].some((row:any)=>!row||typeof row.id!=='string'))throw new Error('Invalid '+field+' records.');
+  if(copy.staffingWeeks!==undefined){if(!Array.isArray(copy.staffingWeeks)||copy.staffingWeeks.length>10000||new Set(copy.staffingWeeks.map((w:Row)=>w.id)).size!==copy.staffingWeeks.length)throw Error('Invalid staffing weeks.');for(const row of copy.staffingWeeks)validateStaffingWeek(copy,row);}
   if(copy.housekeepingDays!==undefined){
     if(!Array.isArray(copy.housekeepingDays)||copy.housekeepingDays.length>10000)throw new Error('Invalid housekeeping day records.');
     const dates=new Set<string>();
@@ -22,6 +24,7 @@ export function validateWorkingCopy(copy:any){
 export function restoreWorkingCopy(current:State,copy:State,actor:string,at=new Date().toISOString()):State {
   validateWorkingCopy(copy);
   const restored:State={...current,config:copy.config,sample:copy.sample===true};
+  restored.staffingWeeks=mergeRows(current.staffingWeeks||[],copy.staffingWeeks||[]);
   for(const field of ['employees','rooms','passon','checks','schedule','availability','reporting'] as const)restored[field]=mergeRows(current[field],copy[field]);
   // Current immutable captures win when the same snapshot is present in both copies.
   restored.snapshots=mergeRows(copy.snapshots,current.snapshots);
@@ -40,6 +43,7 @@ export function restoreWorkingCopy(current:State,copy:State,actor:string,at=new 
   for(const field of ['training','discipline'] as const)restored[field]=mergeRows(current[field],copy[field].map(row=>{const previous=current[field].find(p=>p.id===row.id);return previous?{...row,history:[...(previous.history||[]),{at,by:actor,text:'Working-copy restoration',snapshot:{...previous,history:undefined}}]}:row;}));
   // A changed live schedule becomes a draft; its immutable publication remains intact.
   const changedWeeks=new Set(copy.schedule.filter(row=>JSON.stringify(current.schedule.find(prior=>prior.id===row.id))!==JSON.stringify(row)).map(row=>monday(row.date)));
+  for(const row of copy.staffingWeeks||[])if(JSON.stringify(current.staffingWeeks?.find(w=>w.id===row.id))!==JSON.stringify(row))changedWeeks.add(row.week);
   if(JSON.stringify(current.config.shifts)!==JSON.stringify(copy.config.shifts))for(const row of restored.schedule)changedWeeks.add(monday(row.date));
   if(changedWeeks.size){restored.publishedWeeks=(current.publishedWeeks||(current.published?[current.week]:[])).filter(week=>!changedWeeks.has(week));restored.published=restored.publishedWeeks.includes(current.week);restored.publications=current.publications?.map(p=>({...p,publishedWeeks:p.publishedWeeks.filter((week:string)=>!changedWeeks.has(week))}));}
   return restored;
