@@ -1,120 +1,132 @@
 # EasyMan testing checklist — one computer
 
-Use this checklist together, one section at a time. Use the sample property and invented records only. A checked box means the observed result matched the expectation; leave failed or untested checks unchecked. Record the build, browser, date and evidence below. Tests requiring other people are deferred, not assumed to pass.
+EasyMan is being built for reliable use by real hotel managers and teams. It is currently in development with fictional data and no customers. Test the intended product in [CURRENT_SPEC.md](CURRENT_SPEC.md); current defects are recorded in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
-**Latest owner acceptance report:** October 9, 2026, current 0.2 development build. [LIVE_TESTING.md](LIVE_TESTING.md) records 12 passed workflow checks and 1 pending housekeeping check. Scheduled execution/closed-browser snapshots are confirmed. These results do not automatically complete every finer-grained case below; unconfirmed cases and deferred multi-user/device checks remain unchecked.
+These boxes are a fresh run template. Earlier owner and assistant results remain in [LIVE_TESTING.md](LIVE_TESTING.md), with their dates and limits. A passed check is evidence for its recorded scenario/build, not certification of an entire feature. Keep known failures open until their fixes are verified.
 
-**Build for further detailed tests:** __________ **Browser:** __________ **Date:** __________
+**Source/build:** __________ **Browser/app version:** __________ **Date and property time zone:** __________
 
 **Results:** Pass ___ / Fail ___ / Deferred ___
 
-## 1. Prepare and protect the working copy
+## 1. Prepare the test workspace
 
-- [ ] **P01 — Baseline:** Open EasyMan, confirm the expected property and “Encrypted · saved,” then reload. Expect the same rooms, employees, progress and records.
-- [ ] **P02 — Backups:** Export an encrypted configuration backup, an encrypted working copy, and the account recovery file from Account options. Keep their passphrases outside the files. Expect three usable downloads; account recovery and configuration backups serve different purposes.
-- [ ] **P03 — Test labels:** Use `TEST —` in new record subjects and invented employee/room names. Record the original property name, time zone and shift-change times before changing settings. Do not reset the workspace or clear browser storage.
+- [ ] **P01 — Baseline:** Confirm the intended example property and “Encrypted · saved,” then reload. Expect the same rooms, employees, progress and records.
+- [ ] **P02 — Backup and recovery features:** Export an encrypted configuration backup, encrypted working copy, and account recovery file. Expect three usable downloads with distinct purposes. Keep passphrases outside the files.
+- [ ] **P03 — Test labels and resets:** Use `TEST —` subjects and invented names. Record settings needed to reproduce a result. If a fix makes examples incompatible, reset and regenerate affected example data using a deliberate, verified procedure. Preserving obsolete dummy data is not a release requirement. Resetting test data does not mean deleting hosting, DNS, repositories or secrets. No reset is part of this documentation update.
 
 ## 2. Settings, employees and imports
 
-- [ ] **C01 — Settings:** Change the property name, save and reload, then restore it. Expect the name to persist both times.
-- [ ] **C02 — Time zone:** Check the configured IANA time zone and shift-change times. Expect scheduling, incident times and snapshots to use the property zone. Do not change the computer clock.
-- [ ] **C03 — Configuration:** Add an unused test department, position, shift and room type; edit them, disable a supported item and remove only unused items. Expect stable existing IDs and a clear refusal when a referenced item is removed.
-- [ ] **C04 — Employee:** Add an invented employee with a department, position, qualifications, seniority and weekly-hour limit; edit and reload. Expect the saved values and additional department affiliations to remain.
-- [ ] **C05 — Reporting:** Add a position-based and an individual reporting link. Try a circular relationship. Expect valid links to save and the circle to be rejected without changing the saved graph.
-- [ ] **C06 — Import preview:** Use the importer’s example for a small valid employee or room import. Preview and cancel. Expect no new records. Preview again and confirm; expect exactly the reviewed records.
-- [ ] **C07 — Invalid imports:** Try a duplicate ID, unknown department/room type, impossible calendar date and unexpected employee field. Expect a useful error and no partial import.
+- [ ] **C01 — Settings:** Change the example property name, save/reload, then restore it. Expect both changes to persist.
+- [ ] **C02 — Time zone:** Check the IANA time zone and shift-change times. Expect scheduling, incident times and snapshots to use the property zone. Do not change the computer clock to simulate application time.
+- [ ] **C03 — Configuration:** Add unused departments, positions, shifts and room types; edit, disable and remove supported items. Expect a clear refusal when removing a referenced item would make the current workspace inconsistent.
+- [ ] **C04 — Employee:** Add an invented employee with affiliations, positions, qualifications, seniority, desired hours and a maximum-hour limit. Edit/reload; expect unrelated values to remain.
+- [ ] **C05 — Reporting:** Add position-based and individual reporting links. Try a circular relationship. Expect valid links to save and circles to be rejected without changing the saved graph.
+- [ ] **C06 — Import preview:** Preview a small valid employee/room import and cancel; expect no change. Preview again and confirm; expect exactly the reviewed records.
+- [ ] **C07 — Invalid imports:** Try duplicate IDs, unknown departments/types, impossible dates and unexpected fields. Expect useful errors and no partial import.
+- [ ] **C08 — Availability preservation (issue 1):** Import date-range and shift/position-specific restrictions. Edit only a name, then only split-days-off consent. Save/reload each time. Expect every restriction and qualifier to remain. This currently has a reproduced failure.
+- [ ] **C09 — Room-type defaults (issue 14):** Configure different type defaults and add a room of each type. Expect the type to initialize a new room's score, with explicit room/day overrides independent. The reviewed form has a default-score gap.
 
 ## 3. Scheduling and its spreadsheet
 
-- [ ] **S01 — Generate:** Generate a draft with test staffing rules. Expect only qualified, active employees, no overlapping assignments, and the configured rest/hour limits to be respected.
-- [ ] **S02 — Availability:** Give a test employee a hard unavailable day/date range and a shift-specific restriction; regenerate. Include an overnight shift ending on an unavailable day. Expect no assignment violating those restrictions.
+- [ ] **S01 — Generate:** Use fictional staffing rules. Expect active, qualified employees, no overlaps, and respected rest and maximum-hour limits.
+- [ ] **S02 — Availability:** Test unavailable weekdays, date ranges and shift-specific restrictions, including an overnight shift ending on an unavailable day. Expect no hard-restriction violation.
 - [ ] **S03 — Infeasible staffing:** Request more qualified people than are available. Expect uncovered staffing to be reported instead of violating hard restrictions.
-- [ ] **S04 — Manual edits:** Add, change and remove a test assignment. Expect valid edits to persist and invalid assignments to be rejected with an explanation.
-- [x] **S05 — Partial regeneration:** Regenerate selected days only. Expect unselected days to remain identical and still constrain overlap, rest and weekly hours.
-- [x] **S06 — Publish (assistant local release check, October 10):** Publish a draft, then change a draft assignment or shift template. Expect the publication/history to retain the originally published assignment and shift times.
-- [ ] **S07 — Schedule XLSX:** Export the selected week and open it in a spreadsheet app available on this computer. Expect a valid workbook, the correct week, separate employees even when names match, numeric totals and correct next-day end dates for overnight shifts.
+- [ ] **S04 — Manual edits (issues 2 and 10):** Add, change, reassign and remove assignments; save/reload each time. Expect authorized reassignment to persist and maximum hours not to be silently bypassed. Reassignment rejection and silent over-limit saves are current defects.
+- [ ] **S05 — Partial regeneration:** Regenerate selected dates. Expect untouched dates to remain identical and still constrain overlap, rest and weekly hours.
+- [ ] **S06 — Publication and history (issue 7):** Publish, then edit assignments or shift templates. Expect original publication history to remain. Move an assignment between weeks; both affected current weeks must reflect changed draft status after reload. Cross-week invalidation currently fails.
+- [ ] **S07 — Schedule XLSX:** Export a selected week. Expect correct dates and draft/publication labels, separate employees with matching names, numeric totals and correct overnight end dates.
+- [ ] **S08 — Employee file:** Click an employee name in desktop and narrow-screen Scheduling. Expect the matching file and access to Edit employee.
+- [ ] **S09 — Days-off consent:** Save/reload with “OK with split days off” unchecked, then checked. Expect the preference to persist without altering existing assignments or richer availability rules.
+- [ ] **S10 — Days-off generation:** With feasible staffing, prefer consecutive days off for employees without consent. For consenting employees, the together-days preference must not influence selection. Hard restrictions take priority; repeat partial generation to confirm untouched dates stay fixed.
+- [ ] **S11 — Desired hours (issue 9):** Use feasible 8-hour and 40-hour targets. Expect targets to influence allocation and useful shortfall information when they cannot be met. The reviewed generator balanced raw hours instead and hid its under-hours messages.
+- [ ] **S12 — Protected coverage (issue 6):** In an isolated synthetic scoped-user test, retain an assignment the editor cannot modify on a regenerated date. Expect it to count toward staffing, remain unchanged and not be filled twice. This currently fails.
+- [ ] **S13 — Shift-time adjustment (coverage C1):** Verify an authorized user can adjust the intended assignment's times, with overlap/rest/availability checks and consistent publication/export results. Selecting a different template alone does not demonstrate the original per-assignment workflow. Its completion remains unverified.
 
 ## 4. Rooms, housekeeping and its spreadsheet
 
-- [ ] **H01 — Room catalog:** Add an invented room numbered `007`; edit its type, floor and workload points. Expect the leading zeros and fractional points to persist.
-- [ ] **H02 — Balance:** Set up a new dated service plan with Balance assignments when applying selected by default with uneven scores and qualified employees. Expect coverage of selected departure/stayover rooms only, useful workload totals and no DND or no-service room in active cleaning assignments.
-- [ ] **H03 — Kept assignments and progress:** Select Keep with this attendant for an assignment, mark another room clean, then rebalance. Expect the kept assignment and completed progress to remain.
-- [ ] **H04 — Overrides and reassignment:** Set a temporary score/flag override and manually reassign a room. Expect totals and exported values to reflect the override without silently rewriting the room catalog.
-- [ ] **H05 — DND:** Flag a room DND, including a previously locked assignment, and rebalance. Expect it to remain visible as DND outside active cleaning work.
-- [ ] **H06 — Board XLSX:** Export the board and open it. Expect `007` to remain text, unassigned and DND rooms to be represented, fractional totals to stay numeric, and cleaning progress to match the board. Expect no attendant-ID or assignment-lock fields. Print a named attendant tab: portrait Letter, rooms sorted by floor/zone, readable room types, Done boxes and supervisor-note lines. DND and inactive assignments stay off handouts. Large lists may continue on another portrait page rather than shrinking to unreadable text.
-- [ ] **H07 — Daily setup:** Follow [the fictional PMS walkthrough](examples/housekeeping/README.md). Copy the room-catalog conversion prompt and test paste/upload. Unknown rooms and conflicting entries must block applying; map or exclude them explicitly. Inspect the complete no-service list before confirming.
-- [ ] **H08 — Import errors:** Test malformed JSON, a wrong date, numeric room identifiers, duplicate/conflicting services, and unexpected guest fields. Expect useful errors and an unchanged saved board. All-none service requires confirmation.
-- [ ] **H09 — Same-day updates:** Import the same selection twice with balancing off (the update default), then test opting into balancing. Expect no duplicated tasks or reset progress, kept assignments or DND holds. Remove a marked-clean room, inspect the removal warning and confirm; restore its service and expect its saved progress to return.
-- [ ] **H10 — New day and history:** Prepare a new day. Expect fresh progress, assignments and DND holds. Return to the previous day, reload and verify its board remains. Past dates are read-only. Export the selected date and verify the filename and workbook date match it.
+- [ ] **H01 — Room catalog:** Add room `007`; edit its type, floor/zone and fractional workload points. Expect leading zeros and numeric points to persist.
+- [ ] **H02 — Balance:** Prepare a new day with uneven scores and balancing enabled (the new-day default). Expect requested departures/stayovers to be assigned, workload balanced subject to indivisible room scores and kept assignments, and DND/no-service rooms outside active work.
+- [ ] **H03 — Kept assignments and progress:** Select **Keep with this attendant** for one assignment, mark another room clean, and rebalance. Expect both to remain. This keeps an assignment with a person during balancing; it does not mean the room is physically locked.
+- [ ] **H04 — Overrides and reassignment:** Apply a temporary score/flag override and reassign a room. Expect totals and exports to reflect it without silently rewriting the room catalog.
+- [ ] **H05 — DND:** Hold a room as DND, including one kept with an attendant, and rebalance. Expect a visible hold outside active work. Clear DND and confirm service can resume.
+- [ ] **H06 — Board XLSX and handouts:** Expect a manager summary/overview and a named tab for each attendant with work. Preserve `007`, numeric fractional totals and dated progress. Represent unassigned/DND/no-service rooms appropriately in the overview. Omit internal attendant IDs and assignment-lock fields. Print a handout: portrait Letter, readable room/type/floor spacing, floor/zone ordering, Done column and note space. Exclude DND/inactive work. Long lists should continue on another portrait page rather than shrink to unreadable text.
+- [ ] **H07 — Daily setup:** Follow [the fictional PMS walkthrough](examples/housekeeping/README.md). Copy the prompt with the current catalog/date; test JSON paste and upload. Unknown rooms/conflicts must block applying until explicitly resolved. Inspect the complete no-service list.
+- [ ] **H08 — Import errors:** Test malformed JSON, wrong dates, numeric room identifiers, duplicate/conflicting services and guest fields. Expect useful errors and an unchanged board. An all-no-service plan requires confirmation.
+- [ ] **H09 — Same-day updates:** Apply the plan twice with balancing off (the update default), then opt into balancing. Expect no duplicates or reset progress, kept assignments or DND holds. Remove a clean room after reviewing the warning, then restore its service; expect saved progress to return.
+- [ ] **H10 — New day/history:** Prepare another day with fresh progress, assignments and holds. Revisit a prior date and reload; expect its board to remain and past dates to be read-only. Export the selected date; verify filename/workbook dates.
+- [ ] **H11 — Daily attendant pool (issue 4):** After correction, select who is working housekeeping that day and exclude an unavailable/off-duty attendant. Expect setup/rebalancing to use that pool. Currently all active qualified attendants are eligible; daily selection is missing.
+- [ ] **H12 — Scoped instructions (issue 3):** Read an assigned stayover as a synthetic scoped user without the full daily plan. Expect it to stay a stayover after reload. The current view can incorrectly show a departure.
+- [ ] **H13 — Table readability:** Check Room, Floor/Zone, Service, Attendant and Progress headings, concise values without repeated “Room”/“Floor” prefixes, and narrow-screen readability.
 
 ## 5. Inspections, coaching and discipline
 
-- [ ] **R01 — Inspections:** Log a pass and a fail/recheck for invented rooms. Add the recheck as a separate inspection. Expect the initial result and later recheck to remain in history.
-- [ ] **R02 — Inspection boundaries:** Expect inspection failures to remain inspection records; they must not automatically create disciplinary decisions.
-- [ ] **R03 — Coaching:** Create a test coaching record, add expected improvement and follow-up details, then edit it. Expect the latest content, earlier revision and append-only follow-up to be accessible after reload.
-- [ ] **R04 — Discipline:** Create an invented disciplinary record, edit its details and add a follow-up. Expect the original incident/employee association and prior content to remain preserved.
+- [ ] **R01 — Inspections:** Record an initial result and separate recheck. Expect both in history.
+- [ ] **R02 — Inspection boundaries:** Expect failures to remain inspection records, with no automatic disciplinary decision.
+- [ ] **R03 — Coaching:** Create an invented record, expected improvement and follow-up, then edit it. Expect current content, revisions and append-only follow-up after reload.
+- [ ] **R04 — Discipline:** Create/edit an invented record and add follow-up. Expect its incident/employee association and prior content to remain preserved.
+- [ ] **R05 — Acknowledgment (issue 13):** Set Acknowledged, edit unrelated text and reload; repeat with Declined. Expect the saved acknowledgment unless explicitly changed. The current form can reset it to Pending.
+- [ ] **R07 — Inspection details and review (coverage C2):** Verify the relevant attendant and optional failure category can be recorded, then review history by room, inspector, attendant, category, result and date range. Preserve separate rechecks. Full original-scope coverage is not demonstrated by the current form/result tabs.
 
-## 6. Pass-ons and automatic snapshots
+## 6. Pass-ons and application-owned snapshots
 
-- [ ] **L01 — Pass-on lifecycle:** Create a `TEST — handover` item with category, priority, owner, room, due time and description. Add a note, escalation and related follow-up. Expect every change to survive reload and appear in the appropriate filters.
-- [x] **L02 — Completion:** Complete the item. Expect it to leave the open board and remain in Archive with its history.
-- [ ] **L03 — Briefing:** Export a privacy-conscious PNG briefing. Expect a readable 16:9 image containing pass-on information without coaching/discipline records or room/description details excluded by privacy mode.
-- [x] **L04 — Native scheduler check:** Assistant verified the persisted real native timer receipt at 2026-10-10 18:57:30 UTC: one property checked, zero new snapshots due, zero failures. In Shift pass-on → Snapshots, expect a recent “Last automatic check.” Refresh is read-only. Old AI-task receipts do not satisfy this check.
-- [ ] **L05 — Closed-browser handover (repeat after native scheduler replacement):** Before a configured boundary, create a unique open `TEST — snapshot` item and wait for “Encrypted · saved.” Close the app tab before that boundary. After the next native automatic check, reopen the app and inspect Snapshots. Expect a capture stamped at the exact boundary and an automatic receipt from after it. The timer checks every minute; execution can be delayed.
-- [x] **L06 — Historical freeze:** Complete or edit that item after the boundary. Reopen the earlier snapshot. Expect its original boundary-time state, not the later edit. Later-created items must not appear in an earlier snapshot.
-- [ ] **L07 — No duplicates:** Refresh/reopen snapshots repeatedly. Expect one capture per property/boundary, not duplicate copies. Automated checks also exercise repeat capture requests and catch-up batches.
-- [ ] **L09 — Completed-item cutoff:** In a new snapshot, expect completed items less than 12 hours old and all unresolved items. Items completed exactly 12 hours before the boundary, or earlier, must be absent. A later note does not extend inclusion. Later completion or reopening does not change an earlier snapshot. Reload once after the update so current encrypted pass-ons can upgrade their expiry metadata; existing snapshots retain their original contents. Automated synthetic checks cover the exact cutoff, delayed capture, history, reopening, encryption authentication and legacy upgrade.
-- [ ] **L08 — Catch-up:** If the app has been closed across multiple boundaries, inspect subsequent native checks. Expect all due boundaries since the previous capture. Native checks preserve up to 16 boundaries per property per tick and continue on later ticks; browser catch-up also remains available.
+- [ ] **L01 — Lifecycle:** Create `TEST — handover` with category, priority, owner, room, due time and description. Add notes, escalation and follow-up. Expect persistence and appropriate filters.
+- [ ] **L02 — Completion:** Complete it. Expect removal from the open board and retention in Archive/history.
+- [ ] **L03 — Briefing:** Export a privacy-conscious PNG. Expect readable 16:9 output without coaching/discipline content or details excluded by privacy mode.
+- [ ] **L04 — Native health:** Inspect a recent **Last automatic check**. Refresh is read-only. A native zero-capture receipt proves a timer check, not a captured boundary. AI-task/manual/browser receipts do not satisfy this check.
+- [ ] **L05 — Closed-browser handover:** Save a unique open item before a configured boundary; close the tab. After the next native check, reopen and verify the exact-boundary capture and later automatic receipt. Checks run every minute and can be delayed. Repeat on the native architecture; the October 9 owner check used its predecessor.
+- [ ] **L06 — Historical freeze and useful detail (issue 11):** Edit/complete an item and add another after the boundary. Expect only frozen boundary-time records/values, including notes/history, owner, priority, room, due/follow-up time and escalation. The current viewer omits several stored details.
+- [ ] **L07 — No duplicates:** Reopen/refresh repeatedly. Expect one capture per property/boundary. Use isolated tests for repeated requests, overlap and bounded batches.
+- [ ] **L08 — Catch-up:** Leave the app closed across boundaries or use an isolated delayed-run test. Expect historical reconstruction and later checks continuing bounded batches. The native job currently handles up to 16 boundaries per property per tick; browser activity must not be required.
+- [ ] **L09 — Completed-item cutoff:** At a boundary, include unresolved items and items completed less than 12 elapsed hours earlier. Exclude items completed exactly 12 hours earlier or longer. Later notes do not restart the clock; reopening restores unresolved eligibility. Later edits must not change earlier snapshots. Use new-format examples and isolated clock-controlled cases. Incompatible old examples/history may be reset; legacy backfill is not an acceptance requirement.
 
-## 7. Files, recovery, feedback and two browser windows
+## 7. Files, recovery, feedback and concurrent editing
 
-- [ ] **B01 — Backup privacy:** Open the encrypted backup/working-copy/recovery JSON as text. Expect encrypted data rather than readable employee/coaching/discipline descriptions. Store passphrases separately.
-- [ ] **B02 — Restore preview:** Select the encrypted working copy, enter its passphrase and preview; cancel. Expect the workspace to remain unchanged. Try a wrong passphrase; expect rejection without corruption. Only confirm a restore after checking the preview and retaining the baseline backup.
-- [x] **B03 — Recovery on this computer:** After verifying the exported recovery file is safely stored, use a separate browser profile with the same ChatGPT account to restore the account key. Expect authorized records to decrypt there. Keep the original working browser intact throughout this test.
-- [ ] **B04 — Concurrent saves:** Open the same property in two browser windows. Edit from one, then attempt a stale edit in the other. Expect a conflict/reload message instead of silently overwriting newer work. Two windows using one account do not prove different-user permissions.
-- [ ] **B05 — Feedback:** Compose invented feedback, save its draft, reload, review and submit once. Expect the private issue number and matching category. On a failure, expect the encrypted draft to remain. Do not send real guest or employee information.
-- [x] **B06 — Connection interruption:** Briefly disconnect the computer’s network while making a harmless test edit, then reconnect. Expect an honest sync/error state and locally preserved work; confirm the intended saved result after reload. Avoid editing the same record elsewhere during the interruption.
+- [ ] **B01 — Backup privacy:** Inspect encrypted files as text. Expect ciphertext rather than readable operational descriptions; store passphrases separately.
+- [ ] **B02 — Restore:** Preview/cancel a working copy; expect no change. Try a wrong passphrase; expect rejection without corruption. Confirm a valid restore in an isolated example workspace and verify previewed values after reload.
+- [ ] **B03 — Same-account recovery:** In another browser profile, sign in with the same account and restore its recovery file. Expect authorized records after reload. Keep the working browser available during the recovery test so failures can be investigated.
+- [ ] **R06 — Recovery form errors:** Missing, empty, malformed, wrong-format/wrong-account files and wrong passphrases must show useful errors without replacing a stored key. Restore requires the necessary inputs.
+- [ ] **B04 — Concurrent saves:** Save in one of two windows, then attempt a stale edit in the other. Expect conflict/reload handling rather than silent overwrite. One account in two windows does not prove different-user permissions.
+- [ ] **B05 — Feedback:** Save/reload an invented draft, review and submit once. Verify the private issue and Pain Point, Bug or Feature Request category. Failure must retain the encrypted draft. Close synthetic issues after verification.
+- [ ] **B06 — Connection interruption:** Disconnect briefly during a harmless edit, then reconnect. Expect an honest failure/retry state and preserved local work; verify the eventual saved result after reload.
 
-## 8. Layout and spreadsheet applications
+## 8. Access checks with isolated synthetic users
 
-- [x] **U01 — Narrow browser:** Resize the window to a phone-like width. Check navigation, forms, dialogs, tables/cards, buttons and exports. Expect readable controls without blocked actions or overlapping text. This simulates a narrow screen; it does not certify actual mobile hardware.
-- [x] **U02 — Keyboard:** Use Tab/Shift+Tab through a form and modal; close the modal with Escape. Expect visible focus and focus to stay within the modal until it closes.
-- [ ] **U03 — Spreadsheet compatibility:** Open both exports in each available target: Excel [ ], LibreOffice Calc [ ], Google Sheets [ ]. Record unavailable apps as Deferred. Verify values, dates, totals and room-number formatting, and save/reopen a copy. Use only synthetic exports for cloud uploads.
-- [ ] **U04 — Literal text:** Give an invented employee/room a name beginning with `=` and export. Expect literal text, not an executed spreadsheet formula.
+These checks can run on this computer using actual handlers and fictional identities. They do not require a live team. The sample access-profile preview is a navigation preview, not access-enforcement evidence.
 
-## Automated checks we can run here
+- [ ] **A01 — Editing permissions (issue 5):** Scheduling.Edit plus Availability.View should permit draft edits of a published week without Scheduling.Publish. Employee managers should be able to change names without Property.Configure or unrelated reporting rewrites. Both combinations currently fail.
+- [ ] **A02 — Revoked recovery approval (issue 8):** Revoke a synthetic administrator's app session. Expect privileged recovery approval to reject it while the intended bootstrap flow remains usable. The approval path currently has a reproduced gap.
+- [ ] **A03 — Export capability (issue 15):** With view access but no OperationalData.Export, expect export actions to follow the actual account's capability/scope. Current controls use a sample preview role instead.
+- [ ] **A04 — Scope boundaries:** Exercise confidential records, grants, reporting scopes, disabled users and stale writes through actual handlers and encrypted recipients. Hidden navigation alone does not establish a pass.
 
-The local suite covers schedule constraints/partial regeneration, imports, encryption and recovery-file passphrases, workbook structure, scope/recipient rules, session revocation, stale writes, feedback retries, exact historical snapshot state, background receipts, owner-only snapshot tools and bounded catch-up. These use isolated synthetic accounts/data. Latest assistant-run unit/API result: **68 tests passed; type check passed** for dated housekeeping imports, preservation of legacy boards, progress/holds/kept assignments, selected-date exports and encrypted scope enforcement. The fictional local browser walkthrough verified prompt copying, paste/upload, blocked unknown rooms, explicit exclusion, same-day re-import, rebalance, DND, manual setup of a fresh day, and previous-day persistence after reload. The revised dated workbook was recalculated independently with no formula errors and printed through native LibreOffice: three portrait Letter handouts with the selected date and five active rooms, excluding the DND hold and no-service rooms. No actual PMS export or external LLM was available; the conversion fixture was hand-prepared. These assistant checks do not replace the owner acceptance check.
+## 9. Layout and spreadsheet applications
 
-## Focused private 1.0 release evidence — October 10, 2026
+- [ ] **U01 — Narrow browser:** Check navigation, forms, modals, tables/cards and exports at a phone-like width. Expect readable, usable controls. This does not certify actual mobile hardware.
+- [ ] **U02 — Keyboard:** Tab/Shift+Tab through forms/modals and close with Escape. Expect visible focus and appropriate modal focus containment.
+- [ ] **U03 — Spreadsheet compatibility:** Open both exports in every available target: Excel [ ], LibreOffice Calc [ ], Google Sheets [ ]. Mark unavailable apps Deferred. Check values, dates, totals and room-number formatting; save/reopen a copy. Use synthetic exports for cloud uploads.
+- [ ] **U04 — Literal text:** Export an invented value beginning with `=`. Expect literal text, not an executed formula.
 
-- Empty-property setup and reload: passed in a separate localhost browser origin, using fictional data.
-- Encrypted working-copy preview, confirmation and reload: passed in that isolated browser; restored property, progress, kept assignment and DND were verified. Wrong-passphrase rejection and coherent restoration into an empty property also passed through actual isolated storage handlers.
-- Publication history after a shift-template edit: original history unchanged; affected live week became draft. Working-copy schedule changes preserve immutable publications and also return affected weeks to draft.
-- Revised housekeeping workflows and printable exports: assistant-verified as described above; the owner's original 12-of-13 report remains separate.
-- Unchecked detailed cases are not assumed passed. The user authorized a private release with real-team/device/PMS validation deferred.
+## Evidence and open regressions
 
-## Deferred until additional accounts or devices are available
+The latest recorded automated result is **77 passing tests, passing TypeScript checks and a successful build**, at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` on October 10, 2026. This documentation update did not rerun that suite. Its individual checks remain useful; the later review found workflow failures outside their coverage. See [LIVE_TESTING.md](LIVE_TESTING.md) for dated local-browser, LibreOffice, recovery and native-timer observations.
 
-- [ ] **D01 — Real account invitation and approval**, including access to the private Site as well as property membership.
-- [ ] **D02 — Real manager/frontline access**, confidential records, grants, reporting scopes and disabled-account behavior. The sample access-profile preview checks navigation only; it is not a security test.
-- [ ] **D03 — Administrator-assisted recovery** and historical-key provisioning with a genuinely different administrator account.
-- [ ] **D04 — Actual phone/tablet behavior**, plus real hotel staffing/workload acceptance by the people who will use it.
+Review issue 12 concerned incompatible legacy snapshot history. The owner permits replacement of incompatible examples, so historical backfill is not a blocker. New-format snapshot behavior still must pass L09. The other review issues remain open pending implementation and regression verification.
 
-## Record failures
+## Evidence deferred by available equipment/accounts
 
-For each failure, record: check ID, steps, expected result, observed result, property time zone, build/browser and a screenshot using invented data. Re-test the affected section after a fix. Do not mark Deferred checks as passed, and retain this checklist with the release notes.
+- [ ] **D01 — Hosted invitation/approval with another real account:** Private Site access and property membership both need verification when another account is available.
+- [ ] **D02 — Different-administrator recovery/key provisioning:** Synthetic checks can proceed now; hosted end-to-end verification needs another administrator account.
+- [ ] **D03 — Actual phones/tablets:** Narrow desktop windows are the currently available approximation.
+- [ ] **D04 — Actual PMS/approved LLM conversion:** The included conversion fixture is hand-prepared; real report/model combinations remain untested.
+- [ ] **D05 — Hotel staff workflow feedback:** There is no live property or test team today. Record the evidence gap honestly and revisit release implications explicitly.
 
-| Check ID | Result / evidence | Fix and re-test |
+These limitations do not reduce product scope. They are not proof of failure or completion and must not silently introduce new feature requirements.
+
+## Record results
+
+Record check ID, source/build, steps, expected/observed behavior, browser/app version, time zone and evidence using invented data. Re-test affected scenarios after fixes. Deferred does not mean passed.
+
+| Check ID | Result and evidence | Fix and re-test |
 | --- | --- | --- |
 | | | |
 | | | |
 | | | |
-
-## Schedule days-off preferences
-
-- [x] **S08 — Employee file:** Click an employee name in the desktop or narrow-screen schedule. Expect the matching employee file, then use Edit employee to reach the split-days-off checkbox without leaving the schedule.
-- [x] **S09 — Consent and persistence:** Leave “OK with split days off” unchecked, save and reload. Expect “Try to keep days off together.” Check it, save and reload; expect “OK with split days off.” Changing the preference does not alter existing assignments.
-- [x] **S10 — Draft generation:** Regenerate with suitable fictional staffing and availability. Expect the builder to favor consecutive days off for employees without consent while keeping coverage, qualification, rest and hour checks. Consenting employees may receive consecutive or split days off. Hard restrictions can still require split days off. Re-test partial generation to confirm untouched days stay fixed.
-
-- [x] **R06 — New-browser recovery form:** In a separate browser signed into the same account, expect instructions for exporting from the working browser. Restore stays disabled until a file and passphrase are provided. Empty, malformed or wrong-format files and a wrong passphrase show a useful message, and do not replace the browser key. A matching account recovery file opens the same property after reload. Keep the original working browser and backup intact throughout.

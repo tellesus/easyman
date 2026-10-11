@@ -1,35 +1,42 @@
-# Enable EasyMan feedback
+# EasyMan feedback integration
 
-Destination: **tellesus/easyman-feedback**. Private visibility, GitHub App permissions and installation were verified on October 9, 2026. All four hosted values are configured; the private key is stored as a server secret. The live EasyMan form successfully created synthetic Issue #1. Bug and Feature Request checks used the actual handler with an isolated test database and created Issues #2 and #3; repeating those feedback IDs returned the same issue numbers without making another GitHub request. All three labels were verified and the synthetic issues were closed. No hotel records were used.
+EasyMan sends reviewed user feedback to the separate private repository **[tellesus/easyman-feedback](https://github.com/tellesus/easyman-feedback)** using a server-side GitHub App installation. This is an implemented application integration; normal submissions do not depend on a Codex/GitHub connector or an assistant being present.
 
-## Create the GitHub App
+The app is being developed for live hotel use, but the current hosted environment contains fictional test data and has no customers. The `1.0.0` build value is not a release sign-off. [CURRENT_SPEC.md](CURRENT_SPEC.md) defines the product requirements; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) and [ROADMAP.md](ROADMAP.md) track remaining work.
 
-1. While signed into GitHub as **tellesus**, open [New GitHub App](https://github.com/settings/apps/new).
-2. Give it a unique name, such as **EasyMan Feedback tellesus**. Set Homepage URL to `https://easyman-hotel-ops.michaelleza.chatgpt.site/`. No callback URL or user authorization is needed for this installation-token integration. Leave device flow and user authorization during installation off.
-3. Under Webhook, turn **Active** off. EasyMan does not receive GitHub webhooks.
-4. Under Repository permissions, set **Issues: Read and write**. Metadata read access is supplied by GitHub. Leave other repository, organization and account permissions at No access. Select **Only on this account** and create the App.
-5. On the App's registration settings page, look in **About**: **Client ID** is displayed as plain text below **App ID**, and may have no copy button. Select and copy that text. GitHub also accepts the numeric App ID as the JWT issuer, so the existing `GITHUB_APP_CLIENT_ID` setting can use an App ID if needed. Under Private keys, click **Generate a private key** and retain the downloaded `.pem` file locally.
-6. Choose **Install App**, install it on **tellesus**, choose **Only select repositories**, and select **easyman-feedback**. Do not select the public source repository. The numeric **installation ID** is the final number in the installation settings URL, for example `https://github.com/settings/installations/12345678`. It is different from both the App ID and the GitHub account/user ID. If uncertain, the App-authenticated `GET /repos/tellesus/easyman-feedback/installation` endpoint returns the correct installation ID.
-7. Check that [the feedback repository](https://github.com/tellesus/easyman-feedback) still has private visibility, **Issues** enabled, and is not archived.
+## Configured state and historical verification
 
-Send me the Client ID, installation ID, and the local path of the downloaded PEM file. **Do not paste the private key in chat.** I can read that specifically identified file and configure the hosted server secret without printing or committing its contents. Alternatively, add the following values through the Site's server environment settings yourself.
+On October 9, 2026, the destination's private visibility, GitHub App permissions and installation were verified and all four hosted values were configured. The private key was stored as a server secret. The hosted EasyMan form created synthetic Issue #1. Bug and Feature Request checks used the actual handler with an isolated test database and created Issues #2 and #3; repeating those feedback IDs returned the original issue numbers without another GitHub request. Category labels were verified and the three synthetic issues were closed. No actual hotel records were used.
+
+This evidence covers the tested submission paths at that time. It does not certify all app workflows or replace a new check after credential, installation or integration changes. Do not create a replacement GitHub App merely to follow this guide; the setup section is for maintenance or rebuilding the integration when needed.
+
+## Configure or replace the GitHub App
+
+1. While signed into the repository owner's GitHub account, open [New GitHub App](https://github.com/settings/apps/new).
+2. Give it a unique name, such as **EasyMan Feedback tellesus**, and set Homepage URL to `https://easyman.app/`. This installation-token integration does not use callback URLs, device flow or user authorization during installation.
+3. Turn Webhook **Active** off. EasyMan does not receive GitHub webhooks.
+4. Set repository **Issues: Read and write**. GitHub supplies metadata read access. Leave other repository, organization and account permissions at No access. Select **Only on this account** and create the App.
+5. In the registration settings' **About** section, **Client ID** appears as plain text below **App ID**; there may be no copy button. Select/copy the text. The JWT issuer can also be the numeric App ID, despite the existing environment setting's name `GITHUB_APP_CLIENT_ID`. Generate a private key and keep the downloaded `.pem` file in protected local storage.
+6. Install the App on **tellesus**, choose **Only select repositories**, and select **easyman-feedback**. Do not grant it access to the public source repository. The numeric **installation ID** is the final number in its installation-settings URL. It differs from the App ID and GitHub account/user ID. The App-authenticated `GET /repos/tellesus/easyman-feedback/installation` endpoint can confirm it.
+7. Verify that the destination repository remains private, has **Issues** enabled and is not archived.
+8. Configure the following values in the Site's **server environment**. Do not paste the private key into chat, client-side configuration, source or a feedback issue.
 
 | Server value | Value | Secret |
 | --- | --- | --- |
-| `GITHUB_FEEDBACK_REPOSITORY` | `tellesus/easyman-feedback` — already set | No |
-| `GITHUB_APP_CLIENT_ID` | Client ID from the App settings | No |
-| `GITHUB_INSTALLATION_ID` | Numeric installation ID | No |
-| `GITHUB_APP_PRIVATE_KEY` | Full downloaded PEM contents, including header, footer and actual line breaks | Yes |
+| `GITHUB_FEEDBACK_REPOSITORY` | `tellesus/easyman-feedback` | No |
+| `GITHUB_APP_CLIENT_ID` | Client ID, or App ID used as JWT issuer | No |
+| `GITHUB_INSTALLATION_ID` | Numeric GitHub App installation ID | No |
+| `GITHUB_APP_PRIVATE_KEY` | Full PEM, including header, footer and actual line breaks | Yes |
 
-This integration does not need a personal access token, GitHub password, OAuth client secret, or webhook secret. The GitHub connector used to edit the source repository is separate from the GitHub App used by the running EasyMan Site.
+Keep snapshot scheduler secrets separate when editing the server environment. The integration does not require a personal access token, GitHub password, OAuth client secret or webhook secret. The development GitHub connector used to edit EasyMan source is separate from the GitHub App used by the running application.
 
-## Verify after configuration
+## Verify and handle failures
 
-After changing credentials, verify a clearly marked synthetic submission through EasyMan and check the issue and its category label in the private repository. The three labels are `pain-point`, `bug` and `enhancement`; EasyMan creates a missing category label automatically. The initial live check is complete, as recorded above. Confirmed-retry behavior also passed the actual-handler checks against the live repository.
+After configuration or credential changes, submit explicitly synthetic feedback through EasyMan and verify the issue and expected category in the private repository. The three categories map to `pain-point`, `bug` and `enhancement`; the handler creates a missing category label. Close synthetic issues after verification and record which paths were actually exercised.
 
-Each issue contains only the reviewed subject and description, category, EasyMan version, submission time, module and feedback ID. No hotel records or account email are added automatically. Users should leave confidential information out of the text they compose. Drafts remain encrypted in EasyMan after a failed submission.
+The issue contains the reviewed subject/description, category, EasyMan version, submission time, module and feedback ID. The implementation does not automatically attach hotel records or account email. People should review their own entered text for unnecessary confidential information before submitting. Failed submission drafts remain encrypted in EasyMan.
 
-If GitHub's response is ambiguous, EasyMan blocks blind retries. A developer must search the private issues for the **Feedback ID** before deciding whether the submission exists. The Copy feedback text button includes that ID. A normal confirmed retry returns the original issue number without creating another issue.
+If GitHub's response is ambiguous, the application blocks blind retries. An authorized maintainer should search the private repository for the **Feedback ID** before deciding whether another submission is needed. The Copy feedback text button includes that ID. A confirmed retry returns the original issue number rather than creating a duplicate. Verify these behaviors when modifying the integration; the October 9 checks are historical evidence, not a permanent guarantee.
 
 ## GitHub references
 
@@ -38,4 +45,4 @@ If GitHub's response is ambiguous, EasyMan blocks blind retries. A developer mus
 - [JWT issuer: Client ID or App ID](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app)
 - [Installing a GitHub App](https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party)
 
-Feedback is configured for private 1.0.0. Keep its destination private and all credentials in the hosted server environment. See IMPLEMENTATION.md and RELEASE_NOTES.md for validation and deferred checks.
+See [IMPLEMENTATION.md](IMPLEMENTATION.md) for the implementation inventory and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for the current checks. Keep the destination private and credentials in server-managed secrets during development and eventual live use.

@@ -1,85 +1,111 @@
-# EasyMan — live testing on easyman.app
+# EasyMan — hosted testing on easyman.app
 
-Original acceptance session: October 9, 2026 (America/Chicago). Updated for private 1.0.0 on October 10. The owner-reported results below remain a historical record; assistant release checks are recorded separately.
+Documentation aligned October 10, 2026 (America/Chicago).
 
-## Addresses and data
+EasyMan is intended to become a reliable hotel operations product. The hosted application is currently a development/testing environment with fictional data and no customers. A reachable domain or a `1.0.0` build label does not establish official release readiness. [CURRENT_SPEC.md](CURRENT_SPEC.md) defines the agreed behavior; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records the remaining implementation gaps.
 
-- Test at https://easyman.app/.
-- Keep the working fallback at https://easyman-hotel-ops.michaelleza.chatgpt.site/.
-- Both addresses connect to the same Sites project, application deployment and property database. A change made through either address affects the same records. Use the sample property and fictional records for testing.
-- Site access stays private to the existing allowed account. Additional testers need private Site access and separate EasyMan property invitations/approval. A custom domain does not grant either.
-- Account keys and sessions belong to a browser origin. Do not rely on signing in to transfer your key. First open in another browser/origin may ask for an account recovery file. The Codex in-app browser opened the existing workspace on the new domain during this session without a recovery prompt; Michael subsequently confirmed same-account recovery and reload on this computer, including rejection of missing/wrong recovery files and wrong passphrases.
+This file preserves dated observations. It does not claim those tests were repeated during documentation alignment or that passing examples establish every workflow combination. Use [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for the next run and [ROADMAP.md](ROADMAP.md) for the remaining work.
 
-## Verified setup checks — October 9, 2026
+## Addresses and access
 
-- Sites custom-domain status active; provider hostname active; SSL certificate active.
-- DNS records read back with the expected targets and ownership TXT records.
-- Anonymous root, workspace API and snapshot-status API return 401 with no-store. Supplied fake identity headers do not authorize access.
-- HTTP redirects to HTTPS; the sign-in route redirects to OpenAI.
-- Existing account sign-in returned to https://easyman.app/ and opened The Linden House with Encrypted · saved.
-- Signed-in workspace on the new domain shows the same existing records and prior activity. This is a read-only connectivity check, not completion of the functional acceptance list below.
-- The custom-domain /mcp path is not exposed (anonymous 404). Keep the existing EasyMan connector on its original provisioned endpoint; no connector or snapshot schedule migration was performed.
+- Canonical hosted testing address: [easyman.app](https://easyman.app/).
+- Original managed address: [easyman-hotel-ops.michaelleza.chatgpt.site](https://easyman-hotel-ops.michaelleza.chatgpt.site/).
+- Both addresses connect to the same Sites project, deployment and property database. They are not isolated test environments; edits through either affect the same example records.
+- Site access remains private to the existing allowed account. Another tester would need both private Site access and EasyMan property invitation/approval. A custom domain grants neither.
+- Account keys and sessions are browser/origin-specific. Signing in does not itself transfer a decryption key; first use in another browser/origin may require the account recovery file.
+- `www.easyman.app` was not configured in the recorded setup.
 
-## First sign-in on easyman.app
+## First sign-in or another browser
 
-1. Keep EasyMan open on the original address. In Account options, enter your own recovery passphrase (at least 12 characters) and Download recovery file. Keep this file and its passphrase safe; enter the passphrase only in the app.
-2. Retain an encrypted working copy and configuration backup before altering test data. These are separate from the account recovery file.
-3. Open https://easyman.app/ and sign in with the same ChatGPT account.
-4. If prompted, select the downloaded account recovery file and enter its passphrase. Restore the account key. Expect the same property, employees, schedule, rooms and pass-on history.
-5. Reload the page. Expect the workspace to open and show Encrypted · saved. Keep the original browser available until this succeeds.
+1. For a recovery test, keep the working browser available. In Account options, download the account recovery file using a passphrase of at least 12 characters; keep the passphrase separately.
+2. If the current example state matters to the test, retain an encrypted working copy and configuration backup. These serve different purposes from account recovery.
+3. Open [easyman.app](https://easyman.app/) and sign in with the same account.
+4. If prompted, import the recovery file and enter the passphrase in the application. Expect access to that account's authorized example property records.
+5. Reload and confirm “Encrypted · saved.” Invalid files/passphrases must not replace the stored account key.
 
-## Acceptance session — one computer
+An incompatible example workspace can instead be deliberately reset and regenerated after a fix. Preserving obsolete dummy data is not a project requirement, and a data reset is not a reason to delete infrastructure or credentials. See [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md).
 
-Michael reported these results on October 9, 2026 (America/Chicago): **12 passed, 1 pending**. These checkmarks record the owner’s acceptance report, not a new assistant-run test session. Housekeeping progress/locks/rebalancing/DND is the only unchecked item in this live-domain list. Multi-user and actual mobile-device checks remain deferred.
+## Hosting and connectivity observations — October 9, 2026
 
-- [x] HTTPS opens without a certificate warning; the address remains easyman.app through sign-in and return navigation.
-- [x] Signed-out access prompts for sign-in; it does not expose property records. Check in a private browser window without importing a key there.
-- [x] Same-account recovery opens the existing property. Reload preserves it. Missing/wrong recovery files and wrong passphrases do not replace the stored key.
-- [x] Create a fictional TEST pass-on, reload and update/complete it; verify archive and history. Avoid real guest information.
-- [x] Click an employee name in Scheduling, save a test split-days-off preference and reload. Regenerate a draft; check availability, consecutive days off, coverage, hours and rest. Partial regeneration leaves unselected dates intact. Restore fictional preferences after testing.
-- [x] Export schedule and room-board XLSX files; open in each spreadsheet app available on this computer. Preserve leading-zero room numbers, numeric hours and draft/publication labels. Owner confirmed the export checks and provided LibreOffice layout feedback. The resulting redesign adds portrait attendant handouts; assistant checks subsequently verified LibreOffice print output and live-download structure.
-- [ ] Change a fictional housekeeping task, lock it and rebalance; verify cleaning progress, locks and DND behavior.
-- [x] Record a room check and a separate recheck; verify history.
-- [x] Check coaching/discipline revisions using invented records only. Do not treat the sample access-profile preview as proof of actual multi-user permissions.
-- [x] Verify a fresh background receipt under Shift pass-on → Snapshots after a scheduled run; close the app around a boundary and confirm the frozen historical state afterward. Domain activation does not prove the task executed.
-- [x] Submit explicitly synthetic feedback and verify the expected category in the private feedback repository; remove/close synthetic issues after verification.
-- [x] Repeat narrow-window and keyboard checks, then restore the normal window size. Actual phones/tablets remain deferred.
-- [x] Briefly disconnect/reconnect the network; expect a clear save failure/retry path with no lost local working copy. If another session changes the same workspace, follow the conflict warning and reload before editing.
+The recorded setup checks found:
 
-The snapshot result includes a fresh scheduled background receipt, a capture with the app closed around a boundary, and frozen historical state afterward, as confirmed by Michael. This closes the previously unconfirmed scheduled-execution check.
+- Active Sites custom-domain binding, provider hostname and SSL certificate, with expected DNS targets and ownership TXT records.
+- HTTP-to-HTTPS redirection and sign-in returning to `https://easyman.app/`.
+- Anonymous root, workspace API and snapshot-status API responses of 401 with `no-store`; fake identity headers did not authorize access.
+- The signed-in domain opened the same example workspace with “Encrypted · saved.” Michael subsequently confirmed same-account recovery/reload and invalid-file/passphrase rejection on this computer.
+- The custom-domain `/mcp` path returned anonymous 404. The provisioned connector endpoint remained separate. Connector availability is not required for the native snapshot timer.
 
-## Assistant release review — October 10, 2026
+These observations establish the recorded setup behavior, not a fresh audit of the domain or every authorization path.
 
-The user authorized completing the release pass and publishing private 1.0.0. Assistant checks covered the revised housekeeping import/review/balance/progress/kept assignment/DND/history workflow, selected-date exports and LibreOffice handouts. The live six-room board was rebalanced from 1 / 3 / 4.25 to 3 / 3 / 2.25 points and reopened with those totals.
+## Owner-reported workflow session — October 9, 2026
 
-A separate localhost test workspace started empty and stayed empty after reload. A synthetic encrypted working copy was previewed/restored there; room progress, a kept assignment, DND and the restored property survived reload. Actual isolated API handlers also verified encrypted restoration into an empty property. A local schedule was published, its shift template edited and its unchanged publication history inspected; the affected live schedule correctly returned to draft. No hotel records or account keys were cleared in the hosted app.
+Michael reported **12 passed broad checks and 1 pending housekeeping check**. The following table preserves that report, including the boundaries of what it establishes. The application changed afterward, and the later code review found defects in scenarios beyond these broad checks.
 
-The release candidate has 68 passing automated checks and passing TypeScript checks. The GitHub Actions browser view confirmed the pre-release commits had succeeded, despite the connector returning empty run lists. Final candidate CI/build and private deployment are verified before the v1.0.0 tag is created. Real-team, different-administrator, actual-device and actual PMS/LLM checks remain deferred. Unchecked detailed cases are not retrospectively marked passed.
+| Owner-reported check | Recorded result | Interpretation today |
+| --- | --- | --- |
+| HTTPS and same-domain sign-in/return | Passed | Historical hosted-domain check. |
+| Signed-out access without importing a key | Passed | No property records exposed in the checked browser flow. |
+| Same-account recovery, reload and wrong-input rejection | Passed | Historical recovery check on this computer. |
+| Fictional pass-on create/edit/complete/archive/history | Passed | Does not establish every snapshot-viewer detail. |
+| Schedule employee files, split-days-off consent, generation and partial generation | Passed | Later review identified availability preservation, reassignment, scoped generation, hours and publication defects. |
+| XLSX exports in available applications | Passed with LibreOffice feedback | Layout and attendant-handout refinements followed; application-specific coverage must be recorded separately. |
+| Housekeeping progress, kept assignment, rebalance and DND | Pending | Subsequent assistant checks are recorded below; they do not turn this owner check into a pass. |
+| Room inspection and separate recheck history | Passed | Historical fictional-record check. |
+| Coaching/discipline revisions | Passed | Later review found acknowledgment preservation failure; sample access previews do not prove permissions. |
+| Background receipt, closed-app boundary and frozen snapshot | Passed on the earlier architecture | This preceded replacement of the AI task. It does not certify native closed-browser boundary capture. |
+| Synthetic private feedback and categories | Passed | Synthetic issues were closed after verification. |
+| Narrow-window and keyboard behavior | Passed | Actual phones/tablets remain untested. |
+| Disconnect/reconnect, retry and conflict awareness | Passed | Historical same-computer check, not full multi-user validation. |
 
-Use TESTING_CHECKLIST.md to extend validation beyond this release scope, and RECOVERY_AND_ROLLBACK.md for backups and recovery.
+## Assistant observations — October 10, 2026
 
-## Hosting record and rollback
+### Housekeeping and spreadsheets
 
-The existing Sites service runs EasyMan. Cloudflare hosts the easyman.app DNS zone; the native snapshot scheduler is a separate Worker in the owner's Cloudflare account, with no second database.
+Local fictional walkthroughs exercised the copied room-catalog prompt, JSON paste/upload, blocked unknown rooms, explicit exclusion, same-day re-import, balancing, progress, kept assignments, DND, manual preparation of another day and historical reload. The conversion JSON was hand-prepared; no actual PMS report or external LLM conversion was tested.
 
-- Sites project: appgprj_6ac59f72cb7881918238960fa462ddf8.
-- Custom-domain binding: appgdom_6ac98e8b608081918184c990459d1284.
-- Cloudflare zone: 4467476bfd1ad6c289c9ddf610859efb.
-- Apex A records: 162.159.143.30 and 172.66.3.26, DNS-only, TTL 300, as returned by Sites.
-- Ownership validation TXT names: _openai-site-verification.easyman.app and _cf-custom-hostname.easyman.app. Values are public DNS verification records, not app secrets.
-- Canonical testing address: easyman.app. www.easyman.app has not been configured.
-- Existing feedback secrets remain in the Sites environment; a separate native Cloudflare scheduler calls the same project using machine authentication; the AI snapshot task has been removed. No credentials are copied to DNS or source.
+The hosted six-room example was rebalanced from **1 / 3 / 4.25** to **3 / 3 / 2.25** workload points and reopened with those totals. This demonstrates that particular balancing result; the later review identified the separate missing daily-attendant-pool and scoped-service issues.
 
-If the domain has a routing/sign-in problem, return to the original working address and stop testing through easyman.app while it is investigated. Keep both domain binding and DNS intact for diagnosis. If removing the alias is necessary, remove the Sites custom-domain binding and only the DNS records added for it, after confirming their recorded IDs and current values. This affects the alias, not the database. Do not remove the zone, project, storage or account keys.
+The revised dated workbook was independently recalculated without formula errors and printed through native LibreOffice: three portrait Letter handouts with the selected date and five active rooms, excluding the DND hold and no-service rooms. These are recorded assistant results, not evidence for unavailable spreadsheet applications.
 
-For a code regression, redeploy a verified previous Sites version using the native deployment workflow. Reverting the domain or code does not undo test-data changes; use history and retained encrypted exports to recover data deliberately.
+### Isolated setup, restore and publication
 
-Reference: Cloudflare custom-hostname readiness requires active hostname and certificate state, plus DNS targeting the SaaS service: https://developers.cloudflare.com/cloudflare-for-platforms/cloudflare-for-saas/start/getting-started/.
+A separate localhost workspace started empty and remained empty after reload. An encrypted fictional working copy was previewed/restored there, with property data, progress, a kept assignment and DND surviving reload. Isolated handlers exercised wrong-passphrase rejection and restoration into an empty property.
 
-## Native snapshot replacement — October 10, 2026
+A locally published schedule retained its original history after a shift-template edit, and the affected current week returned to draft. This scenario passed; the later review separately reproduced incorrect publication status when moving an assignment between weeks. No hosted example reset was performed during those checks.
 
-The previous scheduled AI task did not satisfy the requirement for application-owned unattended snapshots. Its earlier acceptance results are retained as historical evidence, not proof of native scheduling. The task has been removed. A dedicated Cloudflare Cron Worker now calls the existing private application using machine service access and Ed25519 signatures; no data or account-key migration was performed.
+### Native scheduler and 12-hour cutoff
 
-The complete local suite passes 73 checks. New tests invoke the real bundled Workers runtime with synthetic keys and encrypted records, including transient retry, redirect rejection, immutable boundary state, zero-capture receipts, overlap leases, per-property failure/recovery and bounded catch-up. This local runtime supports the May 22 compatibility date; production uses October 10. Application TypeScript, production build and scheduler dry-run checks pass.
+The required unattended snapshot feature now uses application infrastructure: a Cloudflare Cron Worker calls the managed app with machine authentication and signed requests. It does not require an open browser, ChatGPT session or an AI automation. The owner handles deletion of the obsolete AI task; its cleanup is not part of the native feature's runtime or this documentation task.
 
-Live assistant evidence: the private app deployment succeeded with environment revision 3 and the additive migration. Cloudflare reports the native Worker's every-minute cron enabled, with workers.dev and preview URLs disabled. Sites reports no attached AI automations. A read-only authenticated probe initially returned no native job, then returned a real scheduled invocation: scheduled at 2026-10-10 18:57:23 UTC, started at 18:57:28.568 and succeeded at 18:57:30.134 (1:57 p.m. America/Chicago). It checked the existing property, captured zero new snapshots and recorded zero failures. No live capture POST was manually issued; this is a persisted timer receipt, independent of browser or connector capture. Customer records and property settings were not changed for testing. A synthetic live handover across the next configured boundary remains available as an owner checklist follow-up; isolated encrypted before/after testing passed.
+The recorded native deployment had an every-minute cron enabled, with Workers development and preview URLs disabled. A read-only authenticated probe observed a genuine scheduled invocation at **2026-10-10 18:57:23 UTC**, starting at **18:57:28.568** and succeeding at **18:57:30.134 UTC** (1:57 p.m. America/Chicago): **one property checked, zero new captures, zero failures**. No hosted capture POST was manually issued for that observation. A later recorded successful receipt at **21:05:27.796 UTC** (4:05 p.m. Central) also showed one property checked and zero captures/failures.
+
+These receipts verify real timer execution and persisted health reporting. Since no boundary was newly captured in those runs, a hosted synthetic closed-browser boundary test on the native architecture remains pending. Local tests exercised historical before/after state, retries, signature handling, leases and bounded catch-up.
+
+The latest source also implements exclusion, at the snapshot boundary, of items completed for **12 elapsed hours or more**. Unresolved and more recently completed items remain eligible; later notes do not restart the clock. Local synthetic checks cover the exact cutoff, delayed capture, history, reopening and authenticated expiry metadata. The user permits resetting incompatible legacy examples instead of building backfill solely to preserve them. The frozen snapshot viewer still has a known completeness defect (issue 11).
+
+### Automated result and review limits
+
+The latest recorded full application check run at source **`7e283d3617701c7379dc63ed47c58bb5c67fba65`** is **77 tests passed, TypeScript checks passed and build succeeded**. Earlier 68- and 73-test totals described earlier revisions. The 77-test suite was not rerun for documentation alignment. Type checks and a fresh build of the two help-text corrections passed; neither corrects the review's behavioral findings.
+
+The subsequent review found additional complete-workflow defects despite that passing suite. Its active findings and pending regressions are in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md). Neither these observations nor build metadata establish an official `v1.0.0` release/tag or finished acceptance.
+
+## Hosting record and operational references
+
+Recorded configuration, to be read back before infrastructure changes:
+
+| Item | Recorded value |
+| --- | --- |
+| Sites project | `appgprj_6ac59f72cb7881918238960fa462ddf8` |
+| Custom-domain binding | `appgdom_6ac98e8b608081918184c990459d1284` |
+| Cloudflare zone | `4467476bfd1ad6c289c9ddf610859efb` |
+| Apex A targets supplied by Sites | `162.159.143.30`, `172.66.3.26`; DNS-only; TTL 300 |
+| Ownership TXT names | `_openai-site-verification.easyman.app`, `_cf-custom-hostname.easyman.app` |
+| Native scheduler | `easyman-snapshot-scheduler`, separate Worker in the owner's Cloudflare account |
+
+Sites hosts the application and its database. The scheduler calls that existing application; it does not maintain another property database. Feedback and scheduler credentials belong in their service environments, never DNS or source.
+
+For routing/sign-in problems, use the original managed address to diagnose the same project. Re-read domain/DNS configuration before changing it. For code/data compatibility and deliberate example resets, follow [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md). Native health and catch-up details are in [SNAPSHOT_OPERATIONS.md](SNAPSHOT_OPERATIONS.md).
+
+## Remaining evidence gaps
+
+Testing currently uses this computer, fictional records, isolated synthetic identities and a simulated PMS report. Another real account/administrator, actual phone/tablet, actual PMS/approved-LLM conversion and hotel staff workflow feedback are unavailable or unverified. They are evidence gaps to state when judging readiness, not permission to reduce the intended product or invent customer obligations. The checklist records which useful validation can proceed locally now and which hosted/device checks remain deferred.

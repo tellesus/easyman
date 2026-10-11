@@ -1,21 +1,37 @@
 # EasyMan
 
-**Take it easy, manager.** A responsive hotel operations workspace built from the supplied V1 product specification.
+**Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
 
-Version 1.0.0 is a private release with seven modules, encrypted cloud storage, reviewed daily housekeeping imports, printable exports, recovery files and a private GitHub feedback integration. See [RELEASE_NOTES.md](RELEASE_NOTES.md), [IMPLEMENTATION.md](IMPLEMENTATION.md) and [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md) for release scope, validation and recovery.
+EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. The current review has 14 open findings; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
-## Develop
+## Start with the current documents
 
-Use Node.js 22.13+ (Node 24 recommended).
+| Document | Purpose |
+| --- | --- |
+| [CURRENT_SPEC.md](CURRENT_SPEC.md) | Agreed requirements, including the owner's subsequent updates. |
+| [IMPLEMENTATION.md](IMPLEMENTATION.md) | Existing architecture/features and known limitations. |
+| [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Stable review IDs, evidence and original-scope completeness checks. |
+| [ROADMAP.md](ROADMAP.md) | Remaining work toward a credible live release. |
+| [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) | Single-computer checks, historical evidence and untested areas. |
+| [LIVE_TESTING.md](LIVE_TESTING.md) | Hosted testing at [easyman.app](https://easyman.app/) and domain/authentication evidence. |
+| [SNAPSHOT_OPERATIONS.md](SNAPSHOT_OPERATIONS.md) | Native unattended snapshots and operational checks. |
+| [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md) | Keys, backups, working copies, development resets and rollback. |
+| [FEEDBACK_SETUP.md](FEEDBACK_SETUP.md) | Private GitHub feedback integration and maintenance. |
+| [RELEASE_NOTES.md](RELEASE_NOTES.md) | Development change record and release-status context. |
+| [Housekeeping example](examples/housekeeping/README.md) | Fictional PMS-to-JSON walkthrough. |
+
+Owner-requested changes update the specification. Distinguish required behavior, code currently present and checks actually performed. Disposable test data removes unnecessary compatibility work; it does not excuse incomplete workflows or weaker security.
+
+## Develop and validate
+
+Use Node.js 22.13+; Node 24 is recommended for native TypeScript test execution. Node 22 requires `--experimental-strip-types` for those tests.
 
 ```sh
 npm run install:ci
 npm run dev
 ```
 
-Open the printed local URL. The initial property is clearly labeled sample data. In the local preview, Sign in with ChatGPT uses the starter's local mock account; hosted authentication is owned by Sites. API writes require authentication and same-origin requests.
-
-## Validate
+Open the printed local URL. The local preview uses the starter's mock sign-in identity. Hosted sign-in is provided by Sites; mock authentication is not evidence of the hosted identity flow.
 
 ```sh
 npm test
@@ -23,11 +39,11 @@ npm run typecheck
 npm run build
 ```
 
-Native TypeScript execution for tests needs Node 24, or Node 22 with `--experimental-strip-types`.
+The latest recorded application check run, on October 10 at source `7e283d3617701c7379dc63ed47c58bb5c67fba65`, passed 77 tests, type checks and the deployment build. The later review found workflow combinations those checks missed. Consult the checklist for evidence and rerun relevant checks when implementing fixes.
 
 ## Local database
 
-Declare `d1: "DB"` in `.openai/hosting.json`. Migrations live in `drizzle/`; hosted publication applies them. After building, apply each new migration to the local preview once, in order:
+The existing `.openai/hosting.json` binds D1 as `DB`. Migrations live in `drizzle/`; the managed publishing flow applies them to hosting. For local preview, build and apply new migrations in order, once each:
 
 ```sh
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_romantic_spacker_dave.sql
@@ -35,54 +51,32 @@ node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1
 # Apply each subsequent new .sql migration in order, once.
 ```
 
-## Spreadsheet exports
+There is no requirement to migrate incompatible examples solely to retain their contents. A deliberate development reset must identify its target and produce valid fresh data; these setup commands are not a reset procedure.
 
-Generated drafts favor consecutive days off while keeping coverage and hard constraints. Click an employee name in Scheduling to open their file; **Edit employee → OK with split days off** removes that preference for that employee. It defaults to unchecked for new and existing profiles and affects the next generation, not existing assignments.
+## Common workflows
 
-In Scheduling, select the week and use **Export schedule**. The `.xlsx` workbook contains a weekly matrix and a filterable shift table, including overnight end dates and scheduled-hour totals. Draft and published schedules are labeled as shown in the app.
+In Scheduling, click an employee name to open their file. **OK with split days off** removes that employee's consecutive-days-off preference from the next generation. Leave it unchecked to prefer adjoining days off. Existing issues with preservation of richer availability and schedule editing are listed in the known-issues register; this guidance does not mark them fixed.
 
-In Housekeeping, choose the day and use **Set up day** (or **Update day**) to copy a room-catalog prompt for your approved LLM, upload/paste its JSON result, correct validation issues, and confirm daily departures/stayovers. Rooms not selected have No service. First-time day setup balances selected service rooms automatically by default. Same-day updates retain attendants unless you select **Balance assignments when applying**; **Rebalance board** remains available afterward. **Keep with this attendant** preserves an assignment during balancing; DND is a separate daily hold. Same-day updates preserve progress; new days start fresh and retain previous boards. See [the fictional PMS walkthrough](examples/housekeeping/README.md).
+In Housekeeping, select a date and use **Set up day / Update day**. Copy the provided room-catalog prompt into the hotel's approved external LLM with its PMS report, then upload/paste the JSON result and review validation before applying. Manual room selection is also available. Omitted rooms have No service. First-time setup balances by default; same-day updates retain attendants unless balancing is selected. **Keep with this attendant** protects an assignment during rebalancing, while DND is a separate hold. Daily attendant selection and scoped service display still need the fixes recorded as issues 4 and 3.
 
-Use **Export room board** for the selected day. The `.xlsx` workbook contains a manager workload summary, a room overview, and a portrait Letter sheet for each attendant. Select an attendant tab and print the current sheet to hand out a room list with service/priority, a Done column and space for supervisor notes. An X means the room was already marked clean at export. DND rooms remain on the manager overview and are omitted from attendant lists. Internal attendant IDs and assignment locks stay out of the workbook. Location combines floor and zone; room numbers preserve leading zeros, and workload points retain fractional values. These are export snapshots; handwriting or spreadsheet edits do not update EasyMan.
+**Export schedule** produces a weekly matrix and shift detail. **Export room board** produces a manager summary/overview and one portrait Letter handout per attendant. Select an attendant tab and print the current sheet. The handout has service/priority, Done checks and notes; an X indicates already marked clean at export. Internal IDs and assignment-lock fields are omitted. Room numbers retain leading zeros and numeric hours/points remain numeric. Files are `.xlsx` for Excel, LibreOffice and Google Sheets import; file edits do not update EasyMan. Issue 15 tracks export capability enforcement.
 
-Both downloads are generated in the browser from the current workspace. They use the standard Office Open XML workbook format for Excel, LibreOffice Calc, and Google Sheets import. They contain operational assignments only. Coaching, discipline, employee availability, and guest pass-on records are excluded. Totals use standard spreadsheet formulas with cached results. Editing a downloaded file does not change EasyMan.
+## Accounts and background work
 
-## Feedback destination
+For another browser, sign in with the same account. If recovery is requested, use **Account options → Download recovery file** in a working browser and import the passphrase-encrypted account recovery file in the new browser. Configuration backups and working copies serve different purposes. See the recovery guide for details and the outstanding administrator-approval session defect.
 
-Configure the four environment names in `.env.example` through server-side Sites secrets. Install a GitHub App only on the intended private feedback repository with Issues write and the inherent metadata read permission. Use `owner/repository` for `GITHUB_FEEDBACK_REPOSITORY`. The backend signs short-lived App JWTs and obtains repository-limited installation tokens. Repository privacy is checked before submission. Without configuration, users can preserve and copy feedback drafts; the app reports submission unavailability.
+Snapshots are created by native Cloudflare application infrastructure while the browser and ChatGPT are closed. At each historical shift boundary, new-data snapshots exclude items completed for **12 elapsed hours or more**; unresolved/recently completed items remain. Later notes do not restart completion age. Manual/browser checks cannot certify the native timer. The old AI automation is user-managed cleanup and is not a runtime dependency. See the snapshot guide for receipts, catch-up and current viewer limitations.
 
-## Team access, encryption and recovery
+Feedback uses a server-side GitHub App and the separate private repository `tellesus/easyman-feedback`. Credentials remain in server secrets; no connection to an AI conversation is needed to submit feedback. The public source repository is `tellesus/easyman`.
 
-Records use separate browser-generated keys wrapped to approved account keys. Account options exports an encrypted account recovery file; keep its passphrase safely. Configuration backups are separate. Team & sessions manages invitations, employee links, capabilities, scope, and session revocation. A different full administrator can approve account recovery and provision keys. Loss of every authorized private key and recovery file means loss of plaintext access. See IMPLEMENTATION.md for deployment prerequisites and trust boundaries.
+## Source layout
 
-## Background snapshots
+- `app/workspace.tsx`, `app/housekeeping-ui.tsx`: UI, forms and workflows.
+- `app/domain.ts`, `app/housekeeping.ts`: scheduling, configuration and dated boards.
+- `app/vault.ts`, `app/team-crypto.ts`, `app/access.ts`: encryption and access policy.
+- `app/team-client.ts`, `app/team-server.ts`, `app/team-panel.tsx`: persistence, membership, keys and sessions.
+- `app/snapshot-*.ts`, `app/passon-snapshot.ts`, `infra/snapshot-scheduler/`: encrypted capture and native timer.
+- `app/api/`, `db/schema.ts`, `drizzle/`: server operations, schema and migrations.
+- `.openai/hosting.json`: managed Site identity and storage binding.
 
-New shift snapshots omit pass-ons that had been completed for 12 hours or more at the shift boundary. Unresolved and recently completed items remain. Later notes do not restart that clock; later edits do not change a preserved snapshot. Existing encrypted records upgrade their snapshot expiry metadata when an authorized editable workspace next opens/saves. Existing snapshots retain their original contents.
-
-A native Cloudflare Cron Worker checks every minute, independently of ChatGPT, plugin connections and browsers. Signed machine requests run the application snapshot engine in its existing hosting/database; encrypted records are never decrypted by the job. Native receipts, retries, overlap protection and bounded catch-up are built in. Shift pass-on → Snapshots shows automatic checks and flags failures or overdue checks. Legacy MCP/browser capture remains a fallback and cannot certify native scheduler health. The prior AI task was an architectural mistake and has been removed. See [SNAPSHOT_OPERATIONS.md](SNAPSHOT_OPERATIONS.md) for operation and recovery.
-
-## Project structure
-
-- `app/workspace.tsx`: responsive UI and workflows.
-- `app/domain.ts`: scheduling, boards, reporting graph, imports, and sample data.
-- `app/vault.ts`, `app/team-crypto.ts`, `app/access.ts`: encryption, scoped records, and capability checks.
-- `app/team-client.ts`, `app/team-server.ts`, `app/team-panel.tsx`: membership, key provisioning, sessions, and recovery.
-- `app/api/`: authenticated ciphertext persistence, audit events, and private feedback submission.
-- `db/schema.ts` and `drizzle/`: D1 tables and migrations.
-- `.openai/hosting.json`: private Site identity and storage binding.
-
-The Windows author's runtime and package-manager compatibility shim are ignored under `.sites-runtime/` and never deployed. The standard starter scripts remain portable.
-
-Private GitHub feedback is configured and live-tested. Build 0.2 remains a development release while acceptance checks are recorded in TESTING_CHECKLIST.md. Checks needing other accounts or hardware are explicitly deferred. No 1.0 tag or release is created by this development build.
-
-### Opening another browser or device
-
-Sign in with the same ChatGPT account. If EasyMan asks for an account recovery file, return to a browser where the workspace already opens and use **Account options → Download recovery file**. Choose a recovery passphrase yourself. In the new browser, select `easyman-account-recovery.json` and enter that same passphrase. Account recovery files are separate from configuration backups and working copies; signing in does not transfer the encryption key. Keep the working browser available until the other browser opens successfully.
-
-## Live testing on easyman.app
-
-The custom domain connects to the existing private Sites project and property database. Use [LIVE_TESTING.md](LIVE_TESTING.md) for first sign-in/account recovery, domain checks, the single-computer acceptance session and rollback instructions. The original chatgpt.site address stays available.
-
-## Acceptance status — October 9, 2026
-
-Michael reported 12 passing live-domain checks, including same-account recovery, exports, feedback, record history, network interruption and scheduled snapshots with the app closed. Assistant release checks subsequently covered the revised housekeeping workflow, encrypted restoration into an empty property and publication history after template edits. Private 1.0.0 keeps the existing allowed account. See [LIVE_TESTING.md](LIVE_TESTING.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for separate owner/assistant evidence. Real-team, different-administrator recovery, actual devices and actual PMS/LLM compatibility remain deferred.
+The author's Windows runtime helpers and private local test artifacts are ignored under `.sites-runtime/` and `outputs/`. They are not deployed application dependencies. Preserve the current hosting audience unless the owner requests a change.
