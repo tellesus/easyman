@@ -40,7 +40,7 @@ Invitations, employee/account links, membership changes, key provisioning and se
 - Support passphrase-encrypted account recovery files and administrator-assisted recovery. A different browser must recover the account key; sign-in alone does not transfer it. Incorrect files/passphrases must leave an existing valid key intact.
 - Distinguish account-key recovery, configuration backups, encrypted working copies and shift snapshots. Snapshots cover pass-ons, not a whole-property backup. Losing every authorized key and recovery file prevents plaintext recovery.
 
-These are required behaviors. The current review identifies specific gaps, including recovery approval session checks and export action permissions; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). Encryption alone does not establish that every workflow is correct.
+These are required behaviors. The current review tracks fixes and remaining gaps, including export action permissions; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). Encryption alone does not establish that every workflow is correct.
 
 ## Configuration and setup imports
 

@@ -109,3 +109,7 @@ For routing/sign-in problems, use the original managed address to diagnose the s
 ## Remaining evidence gaps
 
 Testing currently uses this computer, fictional records, isolated synthetic identities and a simulated PMS report. Another real account/administrator, actual phone/tablet, actual PMS/approved-LLM conversion and hotel staff workflow feedback are unavailable or unverified. They are evidence gaps to state when judging readiness, not permission to reduce the intended product or invent customer obligations. The checklist records which useful validation can proceed locally now and which hosted/device checks remain deferred.
+
+## First fix batch — local checks
+
+The first fixes resolve review IDs **1, 2, 5, 7 and 8**. A complete **84-test** run and type/build checks passed, using actual storage handlers with isolated synthetic identities. In a local device-only browser workspace, a date-range restriction with shift/position qualifiers survived name/consent edits and reload; structured date/shift/position controls then changed the range end and persisted it. This browser check is separate from hosted cloud-save and multi-user checks. Reassignment/readback, old scope/history, narrow cloud saves, publish escalation/tampering and revoked recovery approval were tested through the isolated handlers. No hosted records were reset. Existing native/domain observations remain historical evidence.

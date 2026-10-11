@@ -3,7 +3,7 @@ export type Scope = { type: 'property'|'department'|'position'|'employees'|'line
 export type Grant = { capability: string; scope: Scope };
 export type Directory = { employees: Row[]; reporting: Row[] };
 export type Member = { userId: string; email: string; employeeId: string; status: string; grants: Grant[]; publicKey: JsonWebKey };
-export type Resource = { id: string; propertyId?:string; aadVersion?:number; snapshotExcludeAfter?:string|null; field: string; subject: string; revision: number; ciphertext: string; iv: string; wrapped: Record<string,string> };
+export type Resource = { id: string; propertyId?:string; aadVersion?:number; snapshotExcludeAfter?:string|null; publicationWeeks?:string[]; field: string; subject: string; revision: number; ciphertext: string; iv: string; wrapped: Record<string,string> };
 export const fields: Record<string,{read:string;write:string}> = {
   config:{read:'Property.View',write:'Property.Configure'},employees:{read:'Employees.View',write:'Employees.Manage'},rooms:{read:'Rooms.View',write:'Property.Configure'},reporting:{read:'Employees.View',write:'Property.Configure'},
   passon:{read:'ShiftLog.View',write:'ShiftLog.Edit'},checks:{read:'RoomChecks.View',write:'RoomChecks.Perform'},boards:{read:'HousekeepingBoards.View',write:'HousekeepingBoards.Assign'},
@@ -26,6 +26,12 @@ export function permits(member: Pick<Member,'status'|'grants'|'employeeId'|'user
     if(g.scope.type==='direct')return (managementGraph(directory.employees,directory.reporting).get(subject)||[]).includes(member.employeeId);
     return lineage(subject,directory.employees,directory.reporting).includes(member.employeeId);
   });
+}
+// Editing may only remove authenticated publication weeks. Adding one still
+// requires Publish; ciphertext alone cannot establish a safe downgrade.
+export function permitsResourceWrite(member:Member,record:Pick<Resource,'field'|'subject'|'aadVersion'|'publicationWeeks'>,previous:Resource|undefined,directory:Directory){
+  if(permits(member,fields[record.field].write,record.subject,directory))return true;
+  return record.field==='publication'&&record.aadVersion===3&&Array.isArray(record.publicationWeeks)&&permits(member,'Scheduling.Edit',record.subject,directory)&&record.publicationWeeks.every(week=>previous?.publicationWeeks?.includes(week));
 }
 export function profileGrants(profile:string,scope:Scope={type:'property'}):Grant[]{
   const operational=['Property.View','Employees.View','Rooms.View','ShiftLog.View','ShiftLog.Edit','ShiftLog.Create','ShiftLog.ViewArchive','ShiftLog.Handoff','RoomChecks.View','RoomChecks.Perform'];

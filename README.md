@@ -2,7 +2,7 @@
 
 **Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
 
-EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. The current review has 14 open findings; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. The current review has 9 open findings after fixes 1, 2, 5, 7 and 8; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Start with the current documents
 
@@ -39,7 +39,7 @@ npm run typecheck
 npm run build
 ```
 
-The latest recorded application check run, on October 10 at source `7e283d3617701c7379dc63ed47c58bb5c67fba65`, passed 77 tests, type checks and the deployment build. The later review found workflow combinations those checks missed. Consult the checklist for evidence and rerun relevant checks when implementing fixes.
+The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The first fix batch now passes 84 tests, type checks and the deployment build. Consult the checklist for evidence and remaining issues.
 
 ## Local database
 
@@ -55,7 +55,7 @@ There is no requirement to migrate incompatible examples solely to retain their 
 
 ## Common workflows
 
-In Scheduling, click an employee name to open their file. **OK with split days off** removes that employee's consecutive-days-off preference from the next generation. Leave it unchecked to prefer adjoining days off. Existing issues with preservation of richer availability and schedule editing are listed in the known-issues register; this guidance does not mark them fixed.
+In Scheduling, click an employee name to open their file. **OK with split days off** removes that employee's consecutive-days-off preference from the next generation. Leave it unchecked to prefer adjoining days off. Profile saves now preserve richer availability and stable reporting links; additional availability rules have date, weekday, shift and position controls. Authorized reassignment, draft saves without publish permission, and cross-week invalidation are corrected. Remaining scheduling issues are listed in the issue register.
 
 In Housekeeping, select a date and use **Set up day / Update day**. Copy the provided room-catalog prompt into the hotel's approved external LLM with its PMS report, then upload/paste the JSON result and review validation before applying. Manual room selection is also available. Omitted rooms have No service. First-time setup balances by default; same-day updates retain attendants unless balancing is selected. **Keep with this attendant** protects an assignment during rebalancing, while DND is a separate hold. Daily attendant selection and scoped service display still need the fixes recorded as issues 4 and 3.
 
@@ -63,7 +63,7 @@ In Housekeeping, select a date and use **Set up day / Update day**. Copy the pro
 
 ## Accounts and background work
 
-For another browser, sign in with the same account. If recovery is requested, use **Account options → Download recovery file** in a working browser and import the passphrase-encrypted account recovery file in the new browser. Configuration backups and working copies serve different purposes. See the recovery guide for details and the outstanding administrator-approval session defect.
+For another browser, sign in with the same account. If recovery is requested, use **Account options → Download recovery file** in a working browser and import the passphrase-encrypted account recovery file in the new browser. Configuration backups and working copies serve different purposes. Administrator approval now rejects revoked application sessions; bootstrap recovery requests remain usable. See the recovery guide for the procedures and verification limits.
 
 Snapshots are created by native Cloudflare application infrastructure while the browser and ChatGPT are closed. At each historical shift boundary, new-data snapshots exclude items completed for **12 elapsed hours or more**; unresolved/recently completed items remain. Later notes do not restart completion age. Manual/browser checks cannot certify the native timer. The old AI automation is user-managed cleanup and is not a runtime dependency. See the snapshot guide for receipts, catch-up and current viewer limitations.
 

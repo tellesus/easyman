@@ -23,7 +23,7 @@ These boxes are a fresh run template. Earlier owner and assistant results remain
 - [ ] **C05 — Reporting:** Add position-based and individual reporting links. Try a circular relationship. Expect valid links to save and circles to be rejected without changing the saved graph.
 - [ ] **C06 — Import preview:** Preview a small valid employee/room import and cancel; expect no change. Preview again and confirm; expect exactly the reviewed records.
 - [ ] **C07 — Invalid imports:** Try duplicate IDs, unknown departments/types, impossible dates and unexpected fields. Expect useful errors and no partial import.
-- [ ] **C08 — Availability preservation (issue 1):** Import date-range and shift/position-specific restrictions. Edit only a name, then only split-days-off consent. Save/reload each time. Expect every restriction and qualifier to remain. This currently has a reproduced failure.
+- [ ] **C08 — Availability preservation (issue 1):** Import date-range and shift/position-specific restrictions. Edit only a name, then only split-days-off consent. Save/reload each time. Expect every restriction and qualifier to remain. Fixed in the first batch; domain and local browser preservation checks passed.
 - [ ] **C09 — Room-type defaults (issue 14):** Configure different type defaults and add a room of each type. Expect the type to initialize a new room's score, with explicit room/day overrides independent. The reviewed form has a default-score gap.
 
 ## 3. Scheduling and its spreadsheet
@@ -31,9 +31,9 @@ These boxes are a fresh run template. Earlier owner and assistant results remain
 - [ ] **S01 — Generate:** Use fictional staffing rules. Expect active, qualified employees, no overlaps, and respected rest and maximum-hour limits.
 - [ ] **S02 — Availability:** Test unavailable weekdays, date ranges and shift-specific restrictions, including an overnight shift ending on an unavailable day. Expect no hard-restriction violation.
 - [ ] **S03 — Infeasible staffing:** Request more qualified people than are available. Expect uncovered staffing to be reported instead of violating hard restrictions.
-- [ ] **S04 — Manual edits (issues 2 and 10):** Add, change, reassign and remove assignments; save/reload each time. Expect authorized reassignment to persist and maximum hours not to be silently bypassed. Reassignment rejection and silent over-limit saves are current defects.
+- [ ] **S04 — Manual edits (issues 2 and 10):** Add, change, reassign and remove assignments; save/reload each time. Expect authorized reassignment to persist and maximum hours not to be silently bypassed. Reassignment is corrected and API-tested; silent over-limit saves remain open (10).
 - [ ] **S05 — Partial regeneration:** Regenerate selected dates. Expect untouched dates to remain identical and still constrain overlap, rest and weekly hours.
-- [ ] **S06 — Publication and history (issue 7):** Publish, then edit assignments or shift templates. Expect original publication history to remain. Move an assignment between weeks; both affected current weeks must reflect changed draft status after reload. Cross-week invalidation currently fails.
+- [ ] **S06 — Publication and history (issue 7):** Publish, then edit assignments or shift templates. Expect original publication history to remain. Move an assignment between weeks; both affected current weeks must reflect changed draft status after reload. Cross-week reassignment/invalidation now passes its focused regression; retain this checklist for further end-to-end checks.
 - [ ] **S07 — Schedule XLSX:** Export a selected week. Expect correct dates and draft/publication labels, separate employees with matching names, numeric totals and correct overnight end dates.
 - [ ] **S08 — Employee file:** Click an employee name in desktop and narrow-screen Scheduling. Expect the matching file and access to Edit employee.
 - [ ] **S09 — Days-off consent:** Save/reload with “OK with split days off” unchecked, then checked. Expect the preference to persist without altering existing assignments or richer availability rules.
@@ -93,8 +93,8 @@ These boxes are a fresh run template. Earlier owner and assistant results remain
 
 These checks can run on this computer using actual handlers and fictional identities. They do not require a live team. The sample access-profile preview is a navigation preview, not access-enforcement evidence.
 
-- [ ] **A01 — Editing permissions (issue 5):** Scheduling.Edit plus Availability.View should permit draft edits of a published week without Scheduling.Publish. Employee managers should be able to change names without Property.Configure or unrelated reporting rewrites. Both combinations currently fail.
-- [ ] **A02 — Revoked recovery approval (issue 8):** Revoke a synthetic administrator's app session. Expect privileged recovery approval to reject it while the intended bootstrap flow remains usable. The approval path currently has a reproduced gap.
+- [ ] **A01 — Editing permissions (issue 5):** Scheduling.Edit plus Availability.View should permit draft edits of a published week without Scheduling.Publish. Employee managers should be able to change names without Property.Configure or unrelated reporting rewrites. Both reproduced combinations are corrected and pass the focused helper/client/API checks.
+- [ ] **A02 — Revoked recovery approval (issue 8):** Revoke a synthetic administrator's app session. Expect privileged recovery approval to reject it while the intended bootstrap flow remains usable. The approval-session gap is corrected and verified with actual handlers and synthetic identities.
 - [ ] **A03 — Export capability (issue 15):** With view access but no OperationalData.Export, expect export actions to follow the actual account's capability/scope. Current controls use a sample preview role instead.
 - [ ] **A04 — Scope boundaries:** Exercise confidential records, grants, reporting scopes, disabled users and stale writes through actual handlers and encrypted recipients. Hidden navigation alone does not establish a pass.
 
@@ -107,9 +107,9 @@ These checks can run on this computer using actual handlers and fictional identi
 
 ## Evidence and open regressions
 
-The latest recorded automated result is **77 passing tests, passing TypeScript checks and a successful build**, at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` on October 10, 2026. This documentation update did not rerun that suite. Its individual checks remain useful; the later review found workflow failures outside their coverage. See [LIVE_TESTING.md](LIVE_TESTING.md) for dated local-browser, LibreOffice, recovery and native-timer observations.
+The historical review-baseline automated result was **77 passing tests, passing TypeScript checks and a successful build**, at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` on October 10, 2026. The initial documentation-only alignment did not rerun that suite; the subsequent first fix batch passes 84 tests as recorded below. Its individual checks remain useful; the later review found workflow failures outside their coverage. See [LIVE_TESTING.md](LIVE_TESTING.md) for dated local-browser, LibreOffice, recovery and native-timer observations.
 
-Review issue 12 concerned incompatible legacy snapshot history. The owner permits replacement of incompatible examples, so historical backfill is not a blocker. New-format snapshot behavior still must pass L09. The other review issues remain open pending implementation and regression verification.
+Review issue 12 concerned incompatible legacy snapshot history. The owner permits replacement of incompatible examples, so historical backfill is not a blocker. New-format snapshot behavior still must pass L09. Issues 1, 2, 5, 7 and 8 are fixed and locally verified by the first implementation batch. Nine other review findings and C1/C2 remain pending.
 
 ## Evidence deferred by available equipment/accounts
 
@@ -130,3 +130,7 @@ Record check ID, source/build, steps, expected/observed behavior, browser/app ve
 | | | |
 | | | |
 | | | |
+
+## First fix batch — verification record
+
+**84/84 automated tests, type checks and deployment build passed.** New checks cover rich availability/reporting preservation, narrow name editing, advanced-rule validation, cross-week reassignment/history, both reassignment scopes, editor-only publication downgrade and tamper/escalation denial, and recovery approval session revocation/bootstrap. Local browser checks saved/reloaded a qualified date range, changed only name/consent, and edited the range end using normal controls. The fresh-run boxes remain a reusable manual checklist; these results do not turn unavailable hosted/team/device checks into passes.

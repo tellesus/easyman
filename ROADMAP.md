@@ -10,13 +10,13 @@ Finding 12 is withdrawn as a legacy-data compatibility requirement. Incompatible
 
 ## 2. Fix the known workflow and access defects
 
-The following is the proposed implementation order within the agreed scope. Issue numbers remain stable so earlier discussion can be followed. All listed fixes are still pending at this documentation revision.
+The following is the proposed implementation order within the agreed scope. Issue numbers remain stable so earlier discussion can be followed. First batch completed and locally verified: **1, 2, 5, 7, 8**. The remaining **9 active findings** and coverage checks C1/C2 are pending.
 
 | Work group | Review IDs | Required outcome |
 | --- | --- | --- |
-| Preserve work and enforce authority | 1, 2, 5, 8 | Employee edits preserve availability/reporting; authorized shift reassignment and narrow edits persist; revoked admin sessions cannot approve recovery. |
+| Preserve work and enforce authority — fixed, locally verified | 1, 2, 5, 8 | Employee edits preserve availability/reporting; authorized shift reassignment and narrow edits persist; revoked admin sessions cannot approve recovery. |
 | Make daily housekeeping actionable | 3, 4, 14 | Scoped staff see correct service; managers select the available daily pool; room-type defaults initialize scores. |
-| Make schedule results and publication reliable | 6, 7, 9, 10 | Fixed coverage is counted; both weeks become draft after moves; desired hours influence allocation; manual maximum-hour violations require a deliberate warning/override path. |
+| Make schedule results and publication reliable — 7 fixed | 6, 7, 9, 10 | Fixed coverage is counted; both weeks become draft after moves; desired hours influence allocation; manual maximum-hour violations require a deliberate warning/override path. |
 | Finish historical views and action controls | 11, 13, 15 | Frozen pass-on details are usable; unrelated discipline edits retain acknowledgment; exports use real capability/scope checks. |
 
 For each correction, reproduce the issue with synthetic data, fix the actual workflow, add a focused regression where useful, and record the check result. Use fresh generated examples if a correct schema/data standard makes existing examples incompatible. Do not spend time preserving old dummy data for its own sake.

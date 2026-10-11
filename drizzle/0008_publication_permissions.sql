@@ -1,0 +1,1 @@
+ALTER TABLE `encrypted_resources` ADD `publication_weeks` text;

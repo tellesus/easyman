@@ -54,6 +54,74 @@ async function call(actor,route,method='GET',data,query=''){
   const cookie=response.headers.get('set-cookie');if(cookie){const name=cookie.split('=')[0];const prior=(cookies.get(actor)||'').split('; ').filter(c=>c&&!c.startsWith(name+'='));cookies.set(actor,[...prior,cookie.split(';')[0]].join('; '));}
   const value=await response.json();return {status:response.status,value};
 }
+
+async function editingFixture(prefix){
+  const owner=prefix+'-owner',editor=prefix+'-editor',identity=await newIdentity(),editorIdentity=await newIdentity();
+  for(const [actor,key] of [[owner,identity],[editor,editorIdentity]]){await call(actor,'team-workspace');assert.equal((await call(actor,'team-workspace','POST',{action:'identity',publicKey:key.publicKey})).status,200);}
+  const state=emptyState();state.config.sample=false;state.employees=seed().employees.slice(0,2);state.reporting=[{id:'reporting-one',employee:'e2',targetType:'employee',target:'e1'}];state.availability=[{id:'restricted',employee:'e2',from:'2026-10-05',to:'2026-10-12',shift:'pm'}];state.schedule=[{id:'shift',employee:'e1',date:'2026-10-05',position:'agent',shift:'am'}];state.publications=[{id:'e1',employee:'e1',publishedWeeks:['2026-10-05','2026-10-12']},{id:'e2',employee:'e2',publishedWeeks:[]}];
+  state.snapshots=[{id:'published-copy',employee:'e1',type:'schedule',week:'2026-10-05',items:structuredClone(state.schedule),shifts:state.config.shifts,at:'2026-10-04T18:00:00.000Z'}];
+  const dir=directory(state);assert.equal((await call(owner,'team-workspace','POST',{action:'create',directory:dir,timezone:state.config.timezone,boundaries:state.config.boundaries})).status,200);
+  const grants=['Property.View','Employees.View','Rooms.View','Scheduling.View','Scheduling.Edit','Availability.View','Employees.Manage'].map(capability=>({capability,scope:{type:'property'}}));
+  sql.prepare("INSERT INTO members (id,property,user_id,email,employee_id,status,grants,created_at) VALUES (?,?,?,?,?,'active',?,?)").run(owner+'::'+editor,owner,editor,editor+'@example.invalid','e2',JSON.stringify(grants),new Date().toISOString());
+  let context=(await call(owner,'team-workspace')).value;const records=[];for(const item of resources(state,owner))records.push(await seal(item.value,identity,context.members,{...item,propertyId:owner,revision:0},dir));
+  assert.equal((await call(owner,'team-workspace','PUT',{propertyId:owner,revision:context.revision,records,deleted:[]})).status,200);
+  context=(await call(editor,'team-workspace','GET',undefined,'?property='+owner)).value;
+  return {owner,editor,identity,editorIdentity,state,dir,context};
+}
+
+test('shift reassignment saves through actual API, preserves old scope and requires both scopes',async()=>{
+  const f=await editingFixture('assignment-fix');let context=f.context;
+  const prior=context.resources.find(row=>row.id==='schedule:shift');
+  const changed=await seal({...f.state.schedule[0],employee:'e2'},f.editorIdentity,context.members,{id:prior.id,field:'schedule',subject:'e2',revision:prior.revision,propertyId:f.owner},f.dir);
+  assert.equal((await call(f.editor,'team-workspace','PUT',{propertyId:f.owner,revision:context.revision,records:[changed],deleted:[]})).status,200);
+  context=(await call(f.owner,'team-workspace')).value;const stored=context.resources.find(row=>row.id===prior.id);assert.equal(stored.subject,'e2');assert.equal((await openResource(stored,f.identity,f.owner)).employee,'e2');
+  const versions=sql.prepare('SELECT data FROM resource_versions WHERE property=? AND resource_id=?').all(f.owner,f.owner+'::'+prior.id).map(row=>JSON.parse(row.data));assert.equal(versions.length,1);assert.equal(versions[0].subject,'e1');assert.equal((await openResource(versions[0],f.identity,f.owner)).employee,'e1');
+  for(const employee of ['e1','e2']){
+    const grants=['Scheduling.View','Scheduling.Edit'].map(capability=>({capability,scope:{type:'employees',ids:[employee]}}));sql.prepare('UPDATE members SET grants=? WHERE property=? AND user_id=?').run(JSON.stringify(grants),f.owner,f.editor);
+    const movedBack=await seal({...f.state.schedule[0]},f.identity,context.members,{id:prior.id,field:'schedule',subject:'e1',revision:stored.revision,propertyId:f.owner},f.dir);
+    assert.equal((await call(f.editor,'team-workspace','PUT',{propertyId:f.owner,revision:context.revision,records:[movedBack],deleted:[]})).status,403);
+  }
+  assert.equal(sql.prepare('SELECT subject FROM encrypted_resources WHERE id=?').get(f.owner+'::'+prior.id).subject,'e2');
+});
+
+test('narrow editors save employee and draft changes but cannot publish or alter metadata',async()=>{
+  const f=await editingFixture('narrow-edit-fix'),state=await decode(f.context.resources,f.editorIdentity,f.editor);
+  const beforeReporting=structuredClone(state.reporting),beforeAvailability=structuredClone(state.availability);
+  state.employees.find(row=>row.id==='e2').name='TEST renamed without configuration grant';state.schedule[0].date='2026-10-06';state.publications.find(row=>row.employee==='e1').publishedWeeks=['2026-10-12'];
+  const clientFile=path.join(out,'editing-client.mjs');await build({entryPoints:['app/team-client.ts'],outfile:clientFile,bundle:true,format:'esm',platform:'node',logLevel:'silent'});const {saveTeam}=await import(pathToFileURL(clientFile));
+  const context={...f.context,identity:f.editorIdentity,known:new Map(resources(await decode(f.context.resources,f.editorIdentity,f.editor),f.editor).map(item=>[item.id,{resource:f.context.resources.find(r=>r.id===item.id),value:JSON.stringify(item.value)}]))};
+  const priorFetch=globalThis.fetch;globalThis.fetch=async(url,options={})=>{const parsed=new URL(url,'https://easyman.test'),result=await call(f.editor,'team-workspace',options.method||'GET',options.body?JSON.parse(options.body):undefined,parsed.search);return Response.json(result.value,{status:result.status});};
+  try{await saveTeam(state,context,f.editor);}finally{globalThis.fetch=priorFetch;}
+  const remote=(await call(f.editor,'team-workspace','GET',undefined,'?property='+f.owner)).value,restored=await decode(remote.resources,f.editorIdentity,f.editor);
+  assert.equal(restored.employees.find(row=>row.id==='e2').name,'TEST renamed without configuration grant');assert.deepEqual(restored.reporting,beforeReporting);assert.deepEqual(restored.availability,beforeAvailability);assert.equal(restored.schedule[0].date,'2026-10-06');assert.deepEqual(restored.publications.find(row=>row.employee==='e1').publishedWeeks,['2026-10-12']);assert.deepEqual(restored.snapshots[0].items,f.state.snapshots[0].items);
+  const resource=remote.resources.find(row=>row.id==='publication:e1'),malicious=await seal({id:'e1',employee:'e1',publishedWeeks:['2026-10-05','2026-10-12']},f.editorIdentity,remote.members,{id:resource.id,field:'publication',subject:'e1',revision:resource.revision,propertyId:f.owner},f.dir);
+  assert.equal((await call(f.editor,'team-workspace','PUT',{propertyId:f.owner,revision:remote.revision,records:[malicious],deleted:[]})).status,403);
+  await assert.rejects(()=>openResource({...resource,publicationWeeks:['2026-10-05']},f.editorIdentity,f.editor));
+  const smuggled=await seal({id:'e1',employee:'e1',publishedWeeks:[]},f.editorIdentity,remote.members,{id:resource.id,field:'publication',subject:'e1',revision:resource.revision,propertyId:f.owner},f.dir);
+  // Encrypt a contradictory payload under authenticated empty metadata. Readers
+  // must use authenticated weeks, so this cannot turn an edit grant into Publish.
+  const key=await crypto.subtle.unwrapKey('raw',Buffer.from(smuggled.wrapped[f.editor],'base64'),f.editorIdentity.privateKey,{name:'RSA-OAEP'},'AES-GCM',true,['encrypt']);
+  Object.assign(smuggled,await encrypt({id:'e1',employee:'e1',publishedWeeks:['2026-10-05']},key,JSON.stringify([f.owner,smuggled.id,smuggled.field,smuggled.subject,[]])));
+  assert.equal((await call(f.editor,'team-workspace','PUT',{propertyId:f.owner,revision:remote.revision,records:[smuggled],deleted:[]})).status,200);
+  const final=(await call(f.editor,'team-workspace','GET',undefined,'?property='+f.owner)).value;assert.deepEqual((await decode(final.resources,f.editorIdentity,f.editor)).publications.find(row=>row.employee==='e1').publishedWeeks,[]);
+});
+
+test('revoked administrator sessions cannot list or approve recovery; bootstrap remains usable',async()=>{
+  const f=await editingFixture('recovery-session-fix'),replacement=await newIdentity();
+  const original=sql.prepare('SELECT public_key FROM identities WHERE user_id=?').get(f.editor).public_key;
+  assert.equal((await call(f.editor,'recovery','POST',{action:'request',propertyId:f.owner,publicKey:replacement.publicKey})).status,200);
+  const ticket=sql.prepare("SELECT * FROM account_recovery WHERE property=? AND status='requested'").get(f.owner);
+  assert.equal((await call(f.owner,'recovery','POST',{action:'unexpected',propertyId:f.owner,id:ticket.id})).status,400);
+  sql.prepare('UPDATE app_sessions SET revoked=1 WHERE property=? AND user_id=?').run(f.owner,f.owner);
+  assert.equal((await call(f.owner,'recovery','GET',undefined,'?property='+f.owner)).status,401);
+  assert.equal((await call(f.owner,'recovery','POST',{action:'approve',propertyId:f.owner,id:ticket.id})).status,401);
+  assert.equal(sql.prepare('SELECT status FROM account_recovery WHERE id=?').get(ticket.id).status,'requested');assert.equal(sql.prepare('SELECT public_key FROM identities WHERE user_id=?').get(f.editor).public_key,original);
+  sql.prepare('UPDATE app_sessions SET revoked=1 WHERE property=? AND user_id=?').run(f.owner,f.editor);
+  assert.equal((await call(f.editor,'recovery','POST',{action:'request',propertyId:f.owner,publicKey:replacement.publicKey})).status,200);
+  cookies.delete(f.owner);assert.equal((await call(f.owner,'team-workspace')).status,200);
+  assert.equal((await call(f.owner,'recovery','POST',{action:'approve',propertyId:f.owner,id:ticket.id})).status,200);
+  assert.equal(JSON.parse(sql.prepare('SELECT public_key FROM identities WHERE user_id=?').get(f.editor).public_key).n,replacement.publicKey.n);
+});
 test('actual API routes enforce scope, key recipients, CSRF, concurrency, sessions and disabled accounts',async()=>{
   assert.equal((await call(null,'team-workspace')).status,401);
   const owner=await newIdentity(),reader=await newIdentity();

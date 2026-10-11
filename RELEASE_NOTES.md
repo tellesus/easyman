@@ -34,3 +34,10 @@ Validation for this alignment: local documentation links and referenced source-l
 The review covers availability preservation, authorized reassignment, scoped housekeeping, daily staffing, narrow permissions, schedule coverage/publication/hours, recovery approval sessions, snapshot viewing, discipline acknowledgment, workload defaults and export permissions. The specification also retains original shift-time adjustment and room-check reporting requirements that need completeness verification.
 
 Testing is limited to this computer, available software and synthetic records/identities. Real-team, actual-device and actual-PMS/LLM validation is unavailable. Heuristics can leave unavoidable imbalance, but cannot excuse ignoring configured constraints or targets. See the roadmap for fixes and the checklist for verification. An official release decision must address the remaining behavior and evidence.
+
+## First fix batch — employee edits, scheduling authority and recovery
+
+- Fixed review IDs **1, 2, 5, 7 and 8**: preserve richer availability/reporting IDs; authorize shift reassignment in both scopes; allow editor-only safe publication downgrades; draft source/destination weeks after a move; reject revoked administrator sessions for recovery listing/approval.
+- Added readable controls for additional availability restrictions, with date, weekday, shift, position and reason inputs.
+- Added authenticated publication-week metadata (AAD version 3) and migration **0008_publication_permissions**. Publish permission is still required to add weeks; contradictory encrypted payloads cannot promote a draft.
+- Verification: **84 automated tests passed**, type checks and build passed; local save/reload verified preservation and structured range edits. No hosted example-data reset. Nine other active findings and original-scope completeness checks remain pending; this batch is not a release sign-off.

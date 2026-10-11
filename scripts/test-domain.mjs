@@ -1,9 +1,38 @@
 import { registerHooks } from 'node:module';
-registerHooks({resolve(specifier,context,next){return next(specifier==='./time'&&context.parentURL?.endsWith('/domain.ts')?'./time.ts':specifier,context);}});
+registerHooks({resolve(specifier,context,next){return next(specifier.startsWith('./')&&!/\.(ts|js|mjs)$/.test(specifier)&&context.parentURL?.includes('/app/')?specifier+'.ts':specifier,context);}});
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 const { seed, generateSchedule, assignmentError, balanceBoard, managementGraph, lineage, validateImport, days, mergeRows } = await import('../app/domain.ts');
 import { createKey, encrypt, decrypt, encryptBackup, decryptBackup } from '../app/vault.ts';
+const {saveEmployeeProfile}=await import('../app/employee-editor.ts');
+const {invalidateAssignmentPublications}=await import('../app/domain.ts');
+
+function employeeForm(employee){const form=new FormData();for(const key of ['name','department','position','hire','preferred','hours','active'])form.set(key,String(employee[key]??''));for(const key of ['qualifications','departments'])for(const value of employee[key]||[])form.append(key,value);return form;}
+test('name and split-days-off edits preserve imported availability and reporting identities',()=>{
+  const state=seed(),employee=state.employees.find(row=>row.id==='e2');
+  state.availability=[{id:'range',employee:'e2',from:'2026-10-05',to:'2026-10-12',shift:'pm',reason:'TEST evening restriction'},{id:'position',employee:'e2',weekdays:[2],position:'agent'},{id:'date',employee:'e2',date:'2026-10-15'},{id:'weekday',employee:'e2',weekdays:[0,6]}];
+  const form=employeeForm(employee);form.set('name','TEST renamed');form.set('unavailable','2026-10-15');form.append('unavailableWeekdays','0');form.append('unavailableWeekdays','6');form.set('reporting',JSON.stringify(state.reporting.filter(row=>row.employee==='e2').map(({target,targetType})=>({target,targetType}))));
+  let next=saveEmployeeProfile(state,employee,form,{scheduling:true,configuration:true});
+  assert.deepEqual(new Map(next.availability.map(row=>[row.id,row])),new Map(state.availability.map(row=>[row.id,row])));assert.deepEqual(next.reporting,state.reporting);
+  form.set('splitDaysOffOK','on');next=saveEmployeeProfile(next,next.employees.find(row=>row.id==='e2'),form,{scheduling:true,configuration:false});
+  assert.equal(next.employees.find(row=>row.id==='e2').splitDaysOffOK,true);assert.deepEqual(next.availability,state.availability);assert.deepEqual(next.reporting,state.reporting);
+});
+test('employee managers can edit names without rewriting hidden preferences or reporting',()=>{
+  const state=seed(),employee=state.employees.find(row=>row.id==='e2'),form=employeeForm(employee);
+  state.availability=[{id:'range',employee:'e2',from:'2026-10-05',to:'2026-10-12',shift:'pm'}];form.set('name','TEST narrow edit');form.delete('hire');form.delete('hours');form.delete('preferred');
+  const next=saveEmployeeProfile(state,employee,form,{scheduling:false,configuration:false});
+  assert.equal(next.employees.find(row=>row.id==='e2').name,'TEST narrow edit');for(const key of ['hire','hours','preferred'])assert.equal(next.employees.find(row=>row.id==='e2')[key],employee[key]);assert.deepEqual(next.reporting,state.reporting);assert.deepEqual(next.availability,state.availability);
+});
+test('availability editor validates advanced rules and rejects impossible dates before applying',()=>{
+  const state=seed(),employee=state.employees[0],form=employeeForm(employee);form.set('advancedAvailability',JSON.stringify([{id:'range',from:'2026-10-05',to:'2026-10-12',shift:'pm'}]));
+  const next=saveEmployeeProfile(state,employee,form,{scheduling:true,configuration:false});assert.equal(next.availability[0].employee,employee.id);assert.equal(next.availability[0].shift,'pm');assert.equal(state.availability.length,0);
+  form.set('unavailable','2026-02-31');assert.throws(()=>saveEmployeeProfile(state,employee,form,{scheduling:true,configuration:false}),/date/);
+});
+test('moving and reassigning a published shift drafts both affected weeks and employees only',()=>{
+  const state=seed(),old={id:'shift',employee:'e1',date:'2026-10-05'},next={...old,employee:'e2',date:'2026-10-12'};state.week='2026-10-05';state.published=true;state.publishedWeeks=['2026-10-05','2026-10-12','2026-10-19'];state.publications=['e1','e2','e3'].map(employee=>({id:employee,employee,publishedWeeks:[...state.publishedWeeks]}));
+  const archive={id:'archive',type:'schedule',items:[old]};state.snapshots=[archive];const changed=invalidateAssignmentPublications(state,old,next);
+  assert.equal(changed.published,false);assert.deepEqual(changed.publishedWeeks,['2026-10-19']);assert.deepEqual(changed.publications[0].publishedWeeks,['2026-10-12','2026-10-19']);assert.deepEqual(changed.publications[1].publishedWeeks,['2026-10-05','2026-10-19']);assert.deepEqual(changed.publications[2].publishedWeeks,state.publishedWeeks);assert.deepEqual(changed.snapshots,[archive]);
+});
 test('generated schedules satisfy qualification, availability, overlap, rest and hour limits',()=>{
   const state=seed();state.availability=[{id:'av1',employee:'e2',date:state.week}];
   const result=generateSchedule(state);const hours={};

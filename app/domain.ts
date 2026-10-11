@@ -61,6 +61,12 @@ export function assignmentError(state:State, employee:Row, date:string, shift:Ro
   for(const a of existing.filter(a=>a.employee===employee.id&&a.id!==ignore)) {const s=state.config.shifts.find(s=>s.id===a.shift);if(!s)continue;const otherStart=shiftStart(a.date,s,state.config.timezone),otherEnd=shiftEnd(a.date,s,state.config.timezone);if(start<otherEnd&&end>otherStart)return 'This overlaps another assignment.';if(a.date===date)return 'Employee already has a shift on this start date.';if(start>=otherEnd&&start-otherEnd<(state.config.minRestHours??11)*3600000||otherStart>=end&&otherStart-end<(state.config.minRestHours??11)*3600000)return `Less than ${state.config.minRestHours??11} hours between shifts.`;}
   return null;
 }
+export function invalidateAssignmentPublications(state:State,previous:Row|undefined,next:Row){
+  const affected=[previous,next].filter((row):row is Row=>!!row);
+  const weeks=new Set(affected.map(row=>monday(row.date)));
+  const publishedWeeks=(state.publishedWeeks||[]).filter(week=>!weeks.has(week));
+  return {...state,publishedWeeks,published:publishedWeeks.includes(state.week),publications:state.publications?.map(publication=>({...publication,publishedWeeks:publication.publishedWeeks.filter((week:string)=>!affected.some(row=>row.employee===publication.employee&&monday(row.date)===week))}))};
+}
 export function staffingApplies(rule:Row,date:string,config:Configuration){return rule.active!==false&&config.positions.some(p=>p.id===rule.position&&p.active!==false)&&config.shifts.some(s=>s.id===rule.shift&&s.active!==false)&&(!rule.weekdays?.length||rule.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay()))&&(!rule.from||date>=rule.from)&&(!rule.to||date<=rule.to);}
 export function generateSchedule(state:State,selectedDates=days(state.week)) {
   const fixed=state.schedule.filter(a=>!selectedDates.includes(a.date));const assignments:Row[]=[];const warnings:string[]=[];const hours:Record<string,number>={};let required=0;for(const a of fixed.filter(a=>days(state.week).includes(a.date)))hours[a.employee]=(hours[a.employee]||0)+Number(state.config.shifts.find(sh=>sh.id===a.shift)?.hours||0);
