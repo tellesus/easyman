@@ -24,7 +24,7 @@ These boxes are a fresh run template. Earlier owner and assistant results remain
 - [ ] **C06 — Import preview:** Preview a small valid employee/room import and cancel; expect no change. Preview again and confirm; expect exactly the reviewed records.
 - [ ] **C07 — Invalid imports:** Try duplicate IDs, unknown departments/types, impossible dates and unexpected fields. Expect useful errors and no partial import.
 - [ ] **C08 — Availability preservation (issue 1):** Import date-range and shift/position-specific restrictions. Edit only a name, then only split-days-off consent. Save/reload each time. Expect every restriction and qualifier to remain. Fixed in the first batch; domain and local browser preservation checks passed.
-- [ ] **C09 — Room-type defaults (issue 14):** Configure different type defaults and add a room of each type. Expect the type to initialize a new room's score, with explicit room/day overrides independent. The reviewed form has a default-score gap.
+- [ ] **C09 — Room-type defaults (issue 14):** Configure different type defaults and add a room of each type. Expect the type to initialize a new room's score, with explicit room/day overrides independent. Fixed in the second batch; local defaults/override/reset/save/reload checks passed.
 
 ## 3. Scheduling and its spreadsheet
 
@@ -54,7 +54,7 @@ These boxes are a fresh run template. Earlier owner and assistant results remain
 - [ ] **H08 — Import errors:** Test malformed JSON, wrong dates, numeric room identifiers, duplicate/conflicting services and guest fields. Expect useful errors and an unchanged board. An all-no-service plan requires confirmation.
 - [ ] **H09 — Same-day updates:** Apply the plan twice with balancing off (the update default), then opt into balancing. Expect no duplicates or reset progress, kept assignments or DND holds. Remove a clean room after reviewing the warning, then restore its service; expect saved progress to return.
 - [ ] **H10 — New day/history:** Prepare another day with fresh progress, assignments and holds. Revisit a prior date and reload; expect its board to remain and past dates to be read-only. Export the selected date; verify filename/workbook dates.
-- [ ] **H11 — Daily attendant pool (issue 4):** After correction, select who is working housekeeping that day and exclude an unavailable/off-duty attendant. Expect setup/rebalancing to use that pool. Currently all active qualified attendants are eligible; daily selection is missing.
+- [ ] **H11 — Daily attendant pool (issue 4):** Select Working today and exclude an off-duty attendant. Expect setup/rebalancing and new manual assignments to use that saved pool after reload. Remove an attendant with kept/clean rooms, review the release warning, and verify progress remains while locks are released. Test an empty roster and a new date; tasks must remain unassigned. Use optional schedule suggestions with authorized schedule/availability access; unavailable shifts must be excluded. Fixed in the second batch with local browser and encrypted/API checks.
 - [ ] **H12 — Scoped instructions (issue 3):** Read an assigned stayover as a synthetic scoped user without the full daily plan. Expect it to stay a stayover after reload. The current view can incorrectly show a departure.
 - [ ] **H13 — Table readability:** Check Room, Floor/Zone, Service, Attendant and Progress headings, concise values without repeated “Room”/“Floor” prefixes, and narrow-screen readability.
 
@@ -109,7 +109,7 @@ These checks can run on this computer using actual handlers and fictional identi
 
 The historical review-baseline automated result was **77 passing tests, passing TypeScript checks and a successful build**, at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` on October 10, 2026. The initial documentation-only alignment did not rerun that suite; the subsequent first fix batch passes 84 tests as recorded below. Its individual checks remain useful; the later review found workflow failures outside their coverage. See [LIVE_TESTING.md](LIVE_TESTING.md) for dated local-browser, LibreOffice, recovery and native-timer observations.
 
-Review issue 12 concerned incompatible legacy snapshot history. The owner permits replacement of incompatible examples, so historical backfill is not a blocker. New-format snapshot behavior still must pass L09. Issues 1, 2, 5, 7 and 8 are fixed and locally verified by the first implementation batch. Nine other review findings and C1/C2 remain pending.
+Review issue 12 concerned incompatible legacy snapshot history. The owner permits replacement of incompatible examples, so historical backfill is not a blocker. New-format snapshot behavior still must pass L09. Issues 1, 2, 5, 7 and 8 are fixed and locally verified by the first implementation batch. The second batch fixes 3, 4 and 14. Six other review findings and C1/C2 remain pending.
 
 ## Evidence deferred by available equipment/accounts
 
@@ -134,3 +134,7 @@ Record check ID, source/build, steps, expected/observed behavior, browser/app ve
 ## First fix batch — verification record
 
 **84/84 automated tests, type checks and deployment build passed.** New checks cover rich availability/reporting preservation, narrow name editing, advanced-rule validation, cross-week reassignment/history, both reassignment scopes, editor-only publication downgrade and tamper/escalation denial, and recovery approval session revocation/bootstrap. Local browser checks saved/reloaded a qualified date range, changed only name/consent, and edited the range end using normal controls. The fresh-run boxes remain a reusable manual checklist; these results do not turn unavailable hosted/team/device checks into passes.
+
+## Second fix batch verification — October 10, 2026
+
+**90/90 automated tests, type checks and deployment build passed.** Six new focused tests cover empty daily rosters, removal/progress/locks/date isolation, optional schedule suggestions, actual encrypted scoped service, independent score defaults/overrides, and stale queued-save completion. Actual storage and backup/recovery fixtures also verify encrypted roster readback. Existing balancing/export fixtures now explicitly select their synthetic attendants. Local browser import produced 3 departures/3 stayovers, balanced 3/3/2.25 points across selected attendants; removing one attendant released a kept clean room after an explicit warning, then rebalance/reload preserved cleaning progress and the reduced roster. Add room verified suite 2, queen 1.25, retained an override of 2.5 on type change, reset to the type default and saved/reloaded a fictional room. These are local synthetic checks; no real team or PMS report was available.

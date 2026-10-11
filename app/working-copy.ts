@@ -11,6 +11,7 @@ export function validateWorkingCopy(copy:any){
     for(const day of copy.housekeepingDays){
       if(!day||typeof day.id!=='string'||!validDay(day.date)||dates.has(day.date)||!Array.isArray(day.items)||!Array.isArray(day.catalog)||day.items.length>10000||day.catalog.length>10000)throw new Error('Invalid or duplicate housekeeping day.');
       dates.add(day.date);const rooms=new Set<string>();
+      if(day.attendantIds!==undefined&&(!Array.isArray(day.attendantIds)||day.attendantIds.length>10000||new Set(day.attendantIds).size!==day.attendantIds.length||day.attendantIds.some((id:any)=>typeof id!=='string'||!copy.employees.some((e:Row)=>e.id===id))))throw new Error('Invalid housekeeping attendant roster.');
       for(const item of day.items){if(!item||typeof item.room!=='string'||rooms.has(item.room)||!['departure','stayover'].includes(item.service)||!day.catalog.some((r:Row)=>r.id===item.room))throw new Error('Invalid housekeeping service selection.');rooms.add(item.room);}
       if(day.catalog.some((r:any)=>!r||typeof r.id!=='string'||typeof r.number!=='string'))throw new Error('Invalid housekeeping room catalog.');
     }

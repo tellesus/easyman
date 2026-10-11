@@ -25,7 +25,7 @@ Validation for this alignment: local documentation links and referenced source-l
 
 - Scheduling names open employee files; per-employee split-days-off consent removes the default preference for consecutive days off during generation.
 - Daily housekeeping setup provides the room-catalog prompt, external approved-LLM instructions, JSON upload/paste and validation/review. Omitted rooms have No service. First setup balances points by default; same-day updates preserve attendants unless balancing is selected. DND, progress and kept assignments have distinct meanings.
-- Readable daily room headers and improved balancing replaced the earlier presentation/imbalance problems; daily available-attendant selection remains missing.
+- Readable daily room headers and improved balancing replaced the earlier presentation/imbalance problems; daily available-attendant selection is now implemented as a saved Working today roster.
 - XLSX schedule and room-board exports include leading-zero identifiers, numeric values, readable manager sheets and portrait Letter handouts. The action-permission defect is still open.
 - Hosted testing moved to [easyman.app](https://easyman.app/) with the existing private audience. Same-account recovery, private GitHub feedback and other workflows received synthetic/owner checks documented in the testing guides.
 
@@ -41,3 +41,12 @@ Testing is limited to this computer, available software and synthetic records/id
 - Added readable controls for additional availability restrictions, with date, weekday, shift, position and reason inputs.
 - Added authenticated publication-week metadata (AAD version 3) and migration **0008_publication_permissions**. Publish permission is still required to add weeks; contradictory encrypted payloads cannot promote a draft.
 - Verification: **84 automated tests passed**, type checks and build passed; local save/reload verified preservation and structured range edits. No hosted example-data reset. Nine other active findings and original-scope completeness checks remain pending; this batch is not a release sign-off.
+
+## Second corrective batch — housekeeping (October 10, 2026)
+
+- Fixed dated service for scoped attendants without exposing the full daily plan (3).
+- Added a saved Working today roster per day, optional authorized schedule suggestions, empty-roster behavior, and explicit release warnings when removing attendants with assignments/locks (4). Progress, holds and overrides remain.
+- Add room now uses room-type workload defaults with explicit override/reset controls (14).
+- Verification: **90 tests passed**, type checks/build and local roster/import/room-form save/reload checks passed. Six findings plus C1/C2 remain; this is not release sign-off.
+
+Also corrected a save-status race discovered during these checks: Saving securely appears as soon as work is queued, an older save cannot clear newer pending edits, and leaving with pending saves triggers the browser’s warning handler. Browser save/reload and the generation-order test passed.

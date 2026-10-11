@@ -3,7 +3,11 @@ registerHooks({resolve(specifier,context,next){return next(specifier.startsWith(
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 const {seed,today}=await import('../app/domain.ts');
-const {applyDaySetup,applyHousekeepingDay,parseDayImport,dayImportProblems,housekeepingDay,housekeepingPrompt,rebalanceDay,updateDayTask,importEffects}=await import('../app/housekeeping.ts');
+const {applyDaySetup:rawSetup,applyHousekeepingDay:rawApply,parseDayImport,dayImportProblems,housekeepingDay,housekeepingPrompt,rebalanceDay,updateDayTask,importEffects,qualifiedAttendants,dailyAttendantIds,saveDailyAttendants,suggestedAttendantIds}=await import('../app/housekeeping.ts');
+// Existing board scenarios explicitly choose their fictional staff. New roster
+// regressions below call the raw entry points to check the empty-day behavior.
+function applyHousekeepingDay(s,date,rows){const next=rawApply(s,date,rows);return next.housekeepingDays.find(d=>d.date===date)?.attendantIds?next:saveDailyAttendants(next,date,qualifiedAttendants(next).map(e=>e.id));}
+function applyDaySetup(s,date,rows,balance){return rawSetup(s,date,rows,balance,dailyAttendantIds(s,date).length?dailyAttendantIds(s,date):qualifiedAttendants(s).map(e=>e.id));}
 const {resources,directory,seal,newIdentity,decode}=await import('../app/team-crypto.ts');
 const date='2026-10-10',nextDate='2026-10-11';
 function fixture(){const s=seed();s.boards=[];s.rooms=[{id:'zero',number:'007',type:'king',floor:1,score:1,flag:'Departure'},{id:'a',number:'201',type:'suite',floor:2,score:2,flag:'DND'},{id:'b',number:'208',type:'king',floor:2,score:1,flag:'Stayover'},{id:'idle',number:'209',type:'king',floor:2,score:1,flag:'Departure'}];return s;}
@@ -26,6 +30,68 @@ test('first daily setup preserves a legacy DND hold rather than activating its r
 
 function screenshotFixture(){const s=seed(),day=today(s.config.timezone);const selection=[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'departure'},{roomNumber:'203',service:'stayover'},{roomNumber:'204',service:'stayover'},{roomNumber:'301',service:'departure'},{roomNumber:'302',service:'stayover'}];return {s,day,selection};}
 function workload(s,day){const view=housekeepingDay(s,day);return s.employees.filter(e=>e.position===s.config.boardPosition).map(e=>({employee:e.id,points:view.boards.filter(b=>b.active!==false&&b.employee===e.id).reduce((sum,b)=>sum+Number(view.rooms.find(r=>r.id===b.room).score),0)}));}
+
+test('a new day never treats all qualified employees as the available daily roster',()=>{
+  const s=rawSetup(fixture(),date,rows,true),view=housekeepingDay(s,date);
+  assert.deepEqual(dailyAttendantIds(s,date),[]);
+  assert.ok(view.boards.every(b=>!b.employee&&b.active));
+  assert.ok(rebalanceDay(s,date).boards.every(b=>!b.employee));
+  assert.throws(()=>updateDayTask(s,date,'zero',{employee:'e8'}),/working-today roster/);
+});
+test('daily roster survives service updates; removing staff releases locks, preserves progress and excludes them from balancing',()=>{
+  let s=rawSetup(fixture(),date,rows,true,['e8','e9']);
+  const assigned=housekeepingDay(s,date).boards.find(b=>b.employee==='e8');
+  s=updateDayTask(s,date,assigned.room,{locked:true,status:'Clean',scoreOverride:3});
+  const before=structuredClone(housekeepingDay(s,date).boards.find(b=>b.room===assigned.room));
+  s=saveDailyAttendants(s,date,['e9']);
+  const released=housekeepingDay(s,date).boards.find(b=>b.room===assigned.room);
+  assert.equal(released.employee,'');assert.equal(released.locked,false);assert.equal(released.status,'Clean');assert.equal(released.scoreOverride,3);assert.equal(released.id,before.id);
+  s=rawApply(s,date,[...rows,{roomNumber:'209',service:'stayover'}]);
+  assert.deepEqual(dailyAttendantIds(s,date),['e9']);
+  s=rebalanceDay(s,date);assert.ok(housekeepingDay(s,date).boards.filter(b=>b.active).every(b=>b.employee==='e9'));
+  s=rawSetup(s,nextDate,rows,true,['e10']);
+  assert.deepEqual(dailyAttendantIds(s,date),['e9']);assert.deepEqual(dailyAttendantIds(s,nextDate),['e10']);
+  const cleared=rebalanceDay(saveDailyAttendants(s,date,[]),date);
+  assert.ok(housekeepingDay(cleared,date).boards.every(b=>!b.employee));
+  assert.ok(housekeepingDay(cleared,date).boards.some(b=>b.status==='Clean'&&b.scoreOverride===3));
+  assert.ok(housekeepingDay(cleared,nextDate).boards.every(b=>b.employee==='e10'));
+  assert.throws(()=>saveDailyAttendants(s,date,['e1']),/qualified/);
+});
+test('optional schedule suggestions exclude dated and shift-specific unavailability and never add unscheduled staff',()=>{
+  const s=fixture();s.schedule=[{id:'a1',employee:'e8',date,shift:'am',position:'attendant'},{id:'a2',employee:'e9',date,shift:'am',position:'attendant'}];
+  s.availability=[{id:'off',employee:'e8',from:date,to:nextDate}];
+  assert.deepEqual(suggestedAttendantIds(s,date),['e9']);
+  s.availability.push({id:'shift-off',employee:'e9',date,shift:'am',position:'attendant'});
+  assert.deepEqual(suggestedAttendantIds(s,date),[]);
+  assert.deepEqual(suggestedAttendantIds(s,nextDate),[]);
+  // Manual rosters support a hotel that keeps scheduling elsewhere.
+  const manual=rawSetup(s,date,rows,true,['e10']);assert.ok(manual.boards.every(b=>b.employee==='e10'));
+});
+test('scoped encrypted recipients see the dated service even when the private daily plan is withheld',async()=>{
+  const current=today(),s=rawSetup(fixture(),current,[{roomNumber:'007',service:'stayover'}],true,['e8']);
+  s.rooms.find(r=>r.id==='zero').flag='Departure';
+  const owner=await newIdentity(),staff=await newIdentity(),members=[{userId:'owner',employeeId:'',email:'owner@example.invalid',status:'active',grants:[{capability:'*',scope:{type:'property'}}],publicKey:owner.publicKey},{userId:'staff',employeeId:'e8',email:'staff@example.invalid',status:'active',grants:[...['Property.View','Rooms.View','Employees.View'].map(capability=>({capability,scope:{type:'property'}})),{capability:'HousekeepingBoards.View',scope:{type:'employees',ids:['e8']}}],publicKey:staff.publicKey}];
+  const encrypted=[];for(const p of resources(s,'owner'))encrypted.push(await seal(p.value,owner,members,{id:p.id,field:p.field,subject:p.subject,revision:0,propertyId:'test'},directory(s)));
+  assert.ok(!encrypted.find(r=>r.field==='housekeepingDays').wrapped.staff);
+  const loaded=await decode(encrypted.filter(r=>r.wrapped.staff),staff,'staff'),view=housekeepingDay(loaded,current);
+  assert.equal(loaded.housekeepingDays.length,0);assert.equal(view.rooms.find(r=>r.id==='zero').service,'stayover');assert.equal(view.rooms.find(r=>r.id==='zero').flag,'Stayover');
+  assert.equal(view.boards[0].employee,'e8');
+});
+test('room-type scores provide defaults while stored room and daily overrides remain independent',async()=>{
+  const {roomTypeScore}=await import('../app/room-defaults.ts'),s=fixture();
+  assert.equal(roomTypeScore(s,'suite'),2);s.config.roomTypes.find(t=>t.id==='suite').score=0;assert.equal(roomTypeScore(s,'suite'),0);
+  s.rooms.find(r=>r.id==='a').score=2.5;
+  const next=updateDayTask(rawSetup(s,date,rows,true,['e8']),date,'a',{scoreOverride:4});
+  assert.equal(next.rooms.find(r=>r.id==='a').score,2.5);assert.equal(housekeepingDay(next,date).rooms.find(r=>r.id==='a').score,4);
+  assert.equal(roomTypeScore(next,'suite'),0);
+});
+test('queued-save completion never reports newer pending edits as saved',async()=>{
+  const {SaveProgress}=await import('../app/save-progress.ts'),progress=new SaveProgress();
+  assert.equal(progress.pending,false);const older=progress.start(),newer=progress.start();
+  assert.equal(progress.finish(older),false);assert.equal(progress.pending,true);
+  assert.equal(progress.finish(newer),true);assert.equal(progress.pending,false);
+  progress.start();assert.equal(progress.pending,true);
+});
 test('first day setup balances the reported 1 / 3 / 4.25 retained assignments by default',()=>{const {s,day,selection}=screenshotFixture(),saved=applyHousekeepingDay(s,day,selection);assert.deepEqual(workload(saved,day).map(w=>w.points).sort((a,b)=>a-b),[1,3,4.25]);const prepared=applyDaySetup(s,day,selection);assert.deepEqual(workload(prepared,day).map(w=>w.points).sort((a,b)=>a-b),[2.25,3,3]);const view=housekeepingDay(prepared,day);assert.equal(view.boards.filter(b=>b.active!==false).length,6);assert.equal(new Set(view.boards.filter(b=>b.active!==false).map(b=>b.room)).size,6);assert.ok(s.employees.filter(e=>e.position==='attendant').every(e=>view.boards.filter(b=>b.active!==false&&b.employee===e.id).length===2));});
 test('same-day setup preserves assignments by default but can explicitly rebalance an unchanged selection',()=>{const {s,day,selection}=screenshotFixture(),saved=applyHousekeepingDay(s,day,selection);assert.equal(applyDaySetup(saved,day,selection),saved);const balanced=applyDaySetup(saved,day,selection,true);assert.deepEqual(workload(balanced,day).map(w=>w.points).sort((a,b)=>a-b),[2.25,3,3]);assert.deepEqual(applyDaySetup(s,day,selection,false).boards,saved.boards);});
 test('setup balancing preserves kept assignments, cleaning progress, DND and other dates',()=>{const {s,day,selection}=screenshotFixture();let saved=applyHousekeepingDay(s,day,selection);saved=updateDayTask(saved,day,'r0',{locked:true,status:'Clean'});saved=updateDayTask(saved,day,'r12',{flagOverride:'DND',active:false});saved.boards.push({id:'prior',date:'2026-09-01',room:'r0',employee:'e9',status:'Clean',locked:true});const before=structuredClone(saved.boards.find(b=>b.room==='r0'&&b.date===day)),balanced=applyDaySetup(saved,day,selection,true),view=housekeepingDay(balanced,day);assert.deepEqual(view.boards.find(b=>b.room==='r0'),before);assert.equal(view.boards.find(b=>b.room==='r12').active,false);assert.deepEqual(balanced.boards.find(b=>b.id==='prior'),saved.boards.find(b=>b.id==='prior'));for(const task of view.boards.filter(b=>b.active!==false))assert.ok(balanced.employees.find(e=>e.id===task.employee).qualifications.includes(balanced.config.boardPosition));});

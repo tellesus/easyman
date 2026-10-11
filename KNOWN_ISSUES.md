@@ -2,7 +2,7 @@
 
 Reviewed October 10, 2026 (America/Chicago), against the original V1 specification and the owner's subsequent refinements. Reviewed application source: `7e283d3617701c7379dc63ed47c58bb5c67fba65`. Documentation is now aligned to [CURRENT_SPEC.md](CURRENT_SPEC.md); a later documentation-only revision does not mean these code findings are fixed.
 
-The original review numbered 15 findings. **5 findings are fixed and locally verified (1, 2, 5, 7, 8); 9 remain open. Finding 12 is withdrawn as required legacy-data compatibility work.** Its number is retained for continuity. EasyMan is intended for real operational use, but there are currently no customers and all property records are fictional. Incompatible examples may be reset after a fix; the live-use scope and new-data correctness requirements remain intact. The initial documentation pass applied no behavioral fixes. The first implementation batch below now records its verified corrections. Twelve focused scenarios were reproduced with fictional data, actual storage handlers/encryption, or the actual UI form/callback code. Four additional findings are directly visible in the rendering/configuration paths; the two narrow-permission scenarios are grouped into one finding below. No property data, access settings, automations, or application behavior were changed by the review. Review harnesses are checkout-local and ignored by Git.
+The original review numbered 15 findings. **8 findings are fixed and locally verified (1, 2, 3, 4, 5, 7, 8, 14); 6 remain open. Finding 12 is withdrawn as required legacy-data compatibility work.** Its number is retained for continuity. EasyMan is intended for real operational use, but there are currently no customers and all property records are fictional. Incompatible examples may be reset after a fix; the live-use scope and new-data correctness requirements remain intact. The initial documentation pass applied no behavioral fixes. The first implementation batch below now records its verified corrections. Twelve focused scenarios were reproduced with fictional data, actual storage handlers/encryption, or the actual UI form/callback code. Four additional findings are directly visible in the rendering/configuration paths; the two narrow-permission scenarios are grouped into one finding below. No property data, access settings, automations, or application behavior were changed by the review. Review harnesses are checkout-local and ignored by Git.
 
 Original source links below point to the reviewed GitHub revision. Fixed-status paragraphs describe the current corrections.
 
@@ -28,13 +28,21 @@ The UI offers reassignment and keeps the assignment ID, but changing the employe
 
 Source: [assignment edit](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L112), [resource validation](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/api/team-workspace/route.ts#L9).
 
-### 3. Scoped housekeeping users receive incorrect service instructions
+### 3. Scoped housekeeping users receive incorrect service instructions — Fixed and locally verified
+
+**Current status:** Dated task service and priority/hold flags are authoritative when the property-wide plan is withheld. A real encrypted scoped recipient saw Stayover correctly with no daily plan key; actual storage tests verify scoped task readback and plan denial.
+
+**Original finding:**
 
 Daily plans are deliberately withheld from users with department/employee scope, while their assigned task records are readable. `housekeepingDay` interprets the missing plan as a legacy board and substitutes room-catalog flags instead of the task's dated service. With actual encrypted scoped records, a saved stayover displayed as a departure. Use the service on the authorized dated task when the full plan is unavailable.
 
 Source: [daily view](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/housekeeping.ts#L43), [scoped view](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/housekeeping-ui.tsx#L15).
 
-### 4. Housekeeping has no genuine daily attendant pool
+### 4. Housekeeping has no genuine daily attendant pool — Fixed and locally verified
+
+**Current status:** Set up day and Working today save an explicit per-day roster. Rebalancing and new manual assignments use that roster; a new/empty roster leaves tasks unassigned. Optional schedule suggestions require scheduling/availability access and exclude unavailable shifts. Removing attendants explicitly releases assignments/locks after a warning while retaining progress, DND and scores. The local browser verified removal, rebalance and reload; encrypted API readback preserves the roster.
+
+**Original finding:**
 
 Automatic setup and rebalancing use every active employee qualified as an attendant. They do not consult the selected day's schedule or unavailability, and there is no daily add/remove-attendant selection. Reproduction assigned a room to an employee explicitly unavailable and not scheduled that day. Reassigning their rooms manually does not keep them out of the next rebalance. Add an explicit available-today roster; optional schedule integration must also support hotels that do not schedule housekeeping in EasyMan.
 
@@ -112,7 +120,11 @@ The acknowledgment select has no default bound to the saved record. It opens at 
 
 Source: [form](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L126), [save](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L114).
 
-### 14. Room-type workload defaults are not connected to new-room scoring
+### 14. Room-type workload defaults are not connected to new-room scoring — Fixed and locally verified
+
+**Current status:** Add room initializes workload points from the selected active room type, including zero. Explicit overrides survive type changes; Use room-type default resets the value. Existing room/day scores remain independent. Local browser checks verified suite/queen defaults, override retention, reset and save/reload.
+
+**Original finding:**
 
 Room types expose configurable default workload points, but Add room starts its points field at 1 regardless of selected type. Balancing uses the individual room score. A new suite can therefore start at 1 even when its configured type default is 2 or 4. Type defaults should initialize new room scores; explicit room/day overrides should remain independent.
 
@@ -137,4 +149,8 @@ Comparison with the original specification also identifies two completeness chec
 
 These findings are code-backed development defects, not incidents reported by a customer property. The focused review used this computer, fictional data and isolated identities. Actual team/device/PMS validation remains unavailable, separately from the synthetic checks we can perform now. The native Cloudflare scheduler is appropriate application infrastructure; the external-LLM housekeeping preparation workflow was explicitly requested. Neither is counted as a workaround defect.
 
-The earlier automated checks remain useful evidence for their scenarios, but did not cover these complete workflow combinations. The first batch fixes 1, 2, 5, 7 and 8. Its full 84-test run, type checks, build and local employee-editor checks passed. Other fixes and completeness checks remain pending in [ROADMAP.md](ROADMAP.md). The original private local reproduction harnesses are not portable acceptance tests; promote useful scenarios into the repository tests when fixing the corresponding behavior.
+The earlier automated checks remain useful evidence for their scenarios, but did not cover these complete workflow combinations. The first batch fixes 1, 2, 5, 7 and 8. Its full 84-test run, type checks, build and local employee-editor checks passed. The second batch fixes 3, 4 and 14 with 90 passing tests, type checks, build and local housekeeping/room-form checks. Six other fixes and completeness checks remain pending in [ROADMAP.md](ROADMAP.md). The original private local reproduction harnesses are not portable acceptance tests; promote useful scenarios into the repository tests when fixing the corresponding behavior.
+
+## Additional correction found during housekeeping verification
+
+A rapid reload during the 600 ms save delay could lose the latest edit while the indicator still said Saved. The indicator now becomes Saving securely immediately; an older queued save cannot mark newer edits saved, and the browser receives a before-leaving warning while a save remains pending or failed. Local browser checks verified immediate pending status and a new suite retaining its type-default score after confirmed save/reload. A focused queued-generation regression passed. This newly found correction is separate from the original numbered review; six original findings remain open.

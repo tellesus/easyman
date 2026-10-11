@@ -152,7 +152,8 @@ test('attendant sheets keep duplicate names separate, sanitize tab names, exclud
 
 test('dated housekeeping exports use the selected day and omit no-service and DND rooms from attendant sheets',async()=>{
   let state=seed();state.boards=[];
-  state=rebalanceDay(applyHousekeepingDay(state,'2026-10-10',[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'stayover'},{roomNumber:'203',service:'departure'}]),'2026-10-10');
+  const {saveDailyAttendants}=await import('../app/housekeeping.ts');
+  state=rebalanceDay(saveDailyAttendants(applyHousekeepingDay(state,'2026-10-10',[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'stayover'},{roomNumber:'203',service:'departure'}]),'2026-10-10',['e8','e9','e10']),'2026-10-10');
   state=updateDayTask(state,'2026-10-10','r2',{flagOverride:'DND',active:false});
   const file=await buildRoomBoardExport(housekeepingDay(state,'2026-10-10'),generatedAt),book=await open(file);
   assert.equal(file.filename,'easyman-room-board-2026-10-10.xlsx');

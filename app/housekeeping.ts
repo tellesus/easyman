@@ -1,4 +1,4 @@
-import { balanceBoard, today, uid, type Row, type State } from './domain';
+import { assignmentError, balanceBoard, today, uid, type Row, type State } from './domain';
 
 export type Service = 'departure'|'stayover'|'none';
 export type ImportRoom = {roomNumber:string;service:Service;reason?:string};
@@ -46,9 +46,9 @@ export function housekeepingDay(state:State,date:string):State {
   const boards=state.boards.filter(b=>b.date===date||legacy&&!b.date);
   const catalog:Row[]=plan?.catalog||state.rooms;
   const rooms=catalog.filter(r=>r.active!==false).map(r=>{
-    const service=plan?(plan.items.find((item:Row)=>item.room===r.id)?.service||'none'):(legacy?(r.flag==='Stayover'?'stayover':'departure'):boards.find(b=>b.room===r.id)?.service||'none');
     const task=boards.find(b=>b.room===r.id);
-    return {...r,service,score:task?.scoreOverride??r.score,flag:task?.flagOverride||(legacy?r.flag:service?serviceLabel(service):r.flag)};
+    const service=plan?(plan.items.find((item:Row)=>item.room===r.id)?.service||'none'):task?.date?task.service||'none':legacy?(r.flag==='Stayover'?'stayover':'departure'):'none';
+    return {...r,service,score:task?.scoreOverride??r.score,flag:task?.flagOverride||(!task?.date&&legacy?r.flag:serviceLabel(service))};
   });
   return {...state,rooms,boards,housekeepingDate:date};
 }
@@ -67,24 +67,43 @@ export function applyHousekeepingDay(state:State,date:string,rows:ImportRoom[]):
   const previous=state.housekeepingDays?.find(d=>d.date===date),view=housekeepingDay(state,date);
   const items=rows.map(r=>({room:state.rooms.find(room=>String(room.number)===r.roomNumber)!.id,service:r.service})).filter(r=>r.service!=='none').sort((a,b)=>a.room.localeCompare(b.room));
   if(previous&&JSON.stringify(previous.items)===JSON.stringify(items))return state;
-  const plan={id:date,date,items,catalog:structuredClone(state.rooms.filter(r=>r.active!==false)),updatedAt:new Date().toISOString()};
+  const plan={...previous,id:date,date,items,catalog:structuredClone(state.rooms.filter(r=>r.active!==false)),updatedAt:new Date().toISOString()};
   const selected=new Map(items.map(i=>[i.room,i.service]));
   const tasks:Row[]=view.boards.map(b=>{const oldFlag=view.rooms.find(r=>r.id===b.room)?.flag;const flagOverride=b.flagOverride||(!b.date&&['DND','Early arrival'].includes(oldFlag)?oldFlag:'');return {...b,date,flagOverride,active:selected.has(b.room)&&flagOverride!=='DND',service:selected.get(b.room)||'none'};});
   for(const item of items)if(!tasks.some(b=>b.room===item.room))tasks.push({id:uid(),date,room:item.room,service:item.service,employee:'',active:true,locked:false,status:'To clean'} as any);
   // Keep removed tasks dormant so restoring service during the same day preserves progress.
   return {...state,housekeepingDays:[...(state.housekeepingDays||[]).filter(d=>d.date!==date),plan],boards:[...state.boards.filter(b=>!view.boards.includes(b)),...tasks]};
 }
-export function rebalanceDay(state:State,date:string,employees:Row[]=state.employees):State {
-  const view=housekeepingDay(state,date),balanced=balanceBoard({...view,employees});
-  const current=new Set(balanced.map(b=>b.room));
-  return {...state,boards:[...state.boards.filter(b=>!view.boards.includes(b)),...balanced.map(b=>({...b,date,service:view.rooms.find(r=>r.id===b.room)?.service})),...view.boards.filter(b=>!current.has(b.room)).map(b=>({...b,date,active:false}))]};
+export function qualifiedAttendants(state:State){return state.employees.filter(e=>e.active!==false&&(e.qualifications||[e.position]).includes(state.config.boardPosition));}
+export function dailyAttendantIds(state:State,date:string):string[]{
+  const ids=state.housekeepingDays?.find(d=>d.date===date)?.attendantIds;
+  return Array.isArray(ids)?ids.filter(id=>qualifiedAttendants(state).some(e=>e.id===id)):[];
 }
-export function applyDaySetup(state:State,date:string,rows:ImportRoom[],balanceAssignments=!state.housekeepingDays?.some(d=>d.date===date)):State {
-  const next=applyHousekeepingDay(state,date,rows);
+export function suggestedAttendantIds(state:State,date:string):string[]{
+  return qualifiedAttendants(state).filter(e=>state.schedule.some(a=>a.employee===e.id&&a.date===date&&a.position===state.config.boardPosition&&state.config.shifts.some(shift=>shift.id===a.shift&&!assignmentError(state,e,date,shift,a.position,[],a.id)))).map(e=>e.id);
+}
+export function saveDailyAttendants(state:State,date:string,ids:string[]):State {
+  const plan=state.housekeepingDays?.find(d=>d.date===date);
+  if(!plan)throw new Error('Set up the day before saving its attendants.');
+  const unique=[...new Set(ids)];
+  if(unique.some(id=>!qualifiedAttendants(state).some(e=>e.id===id)))throw new Error('Choose active attendants qualified for this board.');
+  const keep=new Set(unique);
+  if(JSON.stringify(plan.attendantIds)===JSON.stringify(unique)&&!state.boards.some(b=>b.date===date&&b.employee&&!keep.has(b.employee)))return state;
+  return {...state,housekeepingDays:state.housekeepingDays!.map(d=>d===plan?{...d,attendantIds:unique,updatedAt:new Date().toISOString()}:d),boards:state.boards.map(b=>b.date===date&&b.employee&&!keep.has(b.employee)?{...b,employee:'',locked:false}:b)};
+}
+export function rebalanceDay(state:State,date:string):State {
+  const view=housekeepingDay(state,date),ids=dailyAttendantIds(state,date),balanced=balanceBoard({...view,employees:qualifiedAttendants(state).filter(e=>ids.includes(e.id))});
+  const current=new Set(balanced.map(b=>b.room));
+  return {...state,boards:[...state.boards.filter(b=>!view.boards.includes(b)),...balanced.map(b=>({...b,date,service:view.rooms.find(r=>r.id===b.room)?.service})),...view.boards.filter(b=>!current.has(b.room)).map(b=>view.rooms.some(r=>r.id===b.room&&r.service!=='none'&&r.flag!=='DND')?{...b,date,employee:'',locked:false,active:true}:{...b,date,active:false})]};
+}
+export function applyDaySetup(state:State,date:string,rows:ImportRoom[],balanceAssignments=!state.housekeepingDays?.some(d=>d.date===date),attendantIds?:string[]):State {
+  let next=applyHousekeepingDay(state,date,rows);
+  if(attendantIds)next=saveDailyAttendants(next,date,attendantIds);
   return balanceAssignments?rebalanceDay(next,date):next;
 }
 export function updateDayTask(state:State,date:string,room:string,update:Partial<Row>):State {
   const view=housekeepingDay(state,date),task=view.boards.find(b=>b.room===room);
   if(!task)throw new Error('Set up this room’s service before assigning it.');
+  if(update.employee&&update.employee!==task.employee&&(!qualifiedAttendants(state).some(e=>e.id===update.employee)||!dailyAttendantIds(state,date).includes(update.employee)))throw new Error('Add this attendant to the working-today roster first.');
   return {...state,boards:state.boards.map(b=>b===task?{...b,...update,date}:b)};
 }
