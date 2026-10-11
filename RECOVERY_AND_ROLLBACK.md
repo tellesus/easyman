@@ -66,3 +66,7 @@ Neither reference is a blanket recommendation to roll back. Determine compatibil
 Use fictional records for the current checklist and isolated account/session tests on this computer. No team or real PMS export is presently available. Real-account invitation/recovery and device checks that have not been exercised must remain explicitly unverified; they do not require inventing a live property or customers. The intended access and recovery behavior still needs evidence before release.
 
 Submit bugs through EasyMan's feedback form to the private feedback repository. Include build version, steps, expected/actual behavior and relevant property time zone; avoid unnecessary guest/employee information. For an ambiguous submission, keep the Feedback ID so the repository can be checked before retrying. See [FEEDBACK_SETUP.md](FEEDBACK_SETUP.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md).
+
+## Public website routing update
+
+The brochure is public at `https://easyman.app/`; open the authenticated workspace at **https://easyman.app/app** for the procedures in this guide. Website visibility does not grant property access. Keys, database, recovery and signed native snapshot endpoints are unchanged. See [WEBSITE.md](WEBSITE.md).

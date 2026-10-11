@@ -146,3 +146,12 @@ The complete suite passes **99/99 tests**, TypeScript checks and the deployment 
 The browser rejected a 40.5-hour manual save without override acknowledgment, then retained adjusted 08:00–17:00/8.5-hour values and the reason after save/reload. An original synthetic Fail/Bathroom inspection and passing recheck remained separate after reload; room/attendant filters and original-history expansion were exercised. An acknowledged synthetic discipline record retained Acknowledged and its prior revision after a subject-only edit and reload. Snapshot detail rendering is covered by the actual read-only component test and encrypted storage; scoped exports are checked with synthetic capability/scopes, not a visual preview role.
 
 All original review fixes and C1/C2 are complete. The unchecked reusable checklist boxes still represent a fresh acceptance run, not missing implementation. Unavailable real-team/device/PMS checks remain explicitly unverified; no requirement to obtain such a team was invented.
+
+## Public website acceptance
+
+- [ ] Open `/` without sign-in; check that only public product information and labeled fictional illustrations appear.
+- [ ] Switch all three feature previews with mouse and arrow keys; open/close FAQs; check anchor links and narrow layouts.
+- [ ] Open `/app` while signed out; expect sign-in before a workspace renders. Anonymous operational API requests must return 401 with no records.
+- [ ] Sign in with the existing owner and open `/app`; confirm the same property and account keys still work.
+- [ ] Follow a property/invitation link; confirm the reference survives navigation/sign-in.
+- [ ] Check footer and Account options license/source notices. A playable demo remains deferred until website review.

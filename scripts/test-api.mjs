@@ -20,7 +20,7 @@ class Statement{constructor(query,params=[]){this.query=query;this.params=params
 globalThis.__easymanHeaders=new AsyncLocalStorage();
 globalThis.__easymanDb={prepare:q=>new Statement(q),batch:async statements=>{sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}};
 const out=path.resolve('.sites-runtime/api-tests');mkdirSync(out,{recursive:true});
-const names=['team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','mcp'];const routes={};
+const names=['team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','workspace','audit','sessions','feedback','mcp'];const routes={};
 for(const name of names){const file=path.join(out,name+'.mjs');await build({entryPoints:[name==='mcp'?'app/mcp/route.ts':'app/api/'+name+'/route.ts'],outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-platform-boundary',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return globalThis.__easymanHeaders.getStore()||new Headers();}':'export function redirect(){throw new Error("Redirect in API test");}'}));}}]});routes[name]=await import(pathToFileURL(file));}
 const snapshotFile=path.join(out,'snapshot-service.mjs');await build({entryPoints:['app/snapshot-server.ts'],outfile:snapshotFile,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-snapshot-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){}'}));}}]});const {captureDueSnapshots,propertySnapshotStatus}=await import(pathToFileURL(snapshotFile));
 const cookies=new Map();
@@ -137,7 +137,7 @@ test('actual API routes enforce scope, key recipients, CSRF, concurrency, sessio
   assert.equal((await call('owner','team-workspace','POST',{action:'create',directory,timezone:'America/Chicago',boundaries:['07:00','15:00','23:00']})).status,200);
   assert.equal((await call('reader','team-workspace','GET',undefined,'?property=owner')).status,403);
   const invitation=await call('owner','team','POST',{action:'invite',propertyId:'owner',email:'reader@example.invalid'});assert.equal(invitation.status,200);
-  const token=new URLSearchParams(new URL(invitation.value.inviteUrl).hash.slice(1)).get('join');
+  const token=new URL(invitation.value.inviteUrl).searchParams.get('join');
   assert.equal((await call('reader','team','POST',{action:'join',token})).status,200);
   assert.equal((await call('reader','team-workspace','GET',undefined,'?property=owner')).status,403);
   const grants=[...profileGrants('Frontline'),{capability:'Training.View',scope:{type:'department',ids:['fo']}}];
@@ -211,7 +211,7 @@ test('daily housekeeping plans and dated tasks persist through the real API with
   for(const [id,identity] of [[actor,owner],[reader,scoped]]){await call(id,'team-workspace');assert.equal((await call(id,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);}
   const directory={employees:[{id:'attendant',department:'hk',position:'attendant',active:true}],reporting:[]};
   assert.equal((await call(actor,'team-workspace','POST',{action:'create',directory,timezone:'America/Chicago',boundaries:[]})).status,200);
-  const invite=await call(actor,'team','POST',{action:'invite',propertyId:actor,email:reader+'@example.invalid'}),token=new URLSearchParams(new URL(invite.value.inviteUrl).hash.slice(1)).get('join');
+  const invite=await call(actor,'team','POST',{action:'invite',propertyId:actor,email:reader+'@example.invalid'}),token=new URL(invite.value.inviteUrl).searchParams.get('join');
   await call(reader,'team','POST',{action:'join',token});
   await call(actor,'team','POST',{action:'approve',propertyId:actor,userId:reader,employeeId:'attendant',grants:[{capability:'HousekeepingBoards.View',scope:{type:'employees',ids:['attendant']}},{capability:'HousekeepingBoards.Assign',scope:{type:'employees',ids:['attendant']}}]});
   const context=(await call(actor,'team-workspace')).value,records=[];
@@ -232,4 +232,16 @@ test('release recovery restores an encrypted backup into an empty isolated prope
   const encrypted=await encryptBackup(backup,'TEST ONLY release restore passphrase');await assert.rejects(()=>decryptBackup(encrypted,'wrong passphrase'));
   const copy=await decryptBackup(encrypted,'TEST ONLY release restore passphrase'),restored=restoreWorkingCopy(reopenedEmpty,copy,'TEST owner');await saveState(restored);
   const reopened=await decode((await call(actor,'team-workspace')).value.resources,identity,actor),view=housekeepingDay(reopened,day);assert.equal(reopened.config.name,'TEST restored property');assert.equal(reopened.sample,true);assert.equal(reopened.rooms.length,24);assert.equal(view.boards.filter(b=>b.active!==false).length,2);assert.equal(view.boards.find(b=>b.room==='r0').status,'Clean');assert.equal(view.boards.find(b=>b.room==='r0').locked,true);assert.deepEqual(reopened.schedule.map(r=>r.id).sort(),backup.schedule.map(r=>r.id).sort());
+});
+
+test('public website access does not permit anonymous operational API reads or writes',async()=>{
+  for(const name of ['team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','workspace','audit','sessions','feedback']){
+    for(const method of ['GET','POST','PUT'].filter(m=>routes[name][m])) {
+      const result=await call(null,name,method,method==='GET'?undefined:{action:'approve',propertyId:'owner',id:'not-a-real-request'});
+      if(name==='feedback'&&method==='GET'){
+        assert.equal(result.status,200);assert.deepEqual(Object.keys(result.value),['configured']);assert.equal(typeof result.value.configured,'boolean');
+      }else assert.equal(result.status,401,name+' '+method);
+      assert.ok(!JSON.stringify(result.value).includes('ciphertext'),name+' '+method+' disclosed records');
+    }
+  }
 });

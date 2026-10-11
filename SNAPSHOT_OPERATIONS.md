@@ -7,7 +7,7 @@ Automatic snapshots are application infrastructure. They must work without ChatG
 ## Components
 
 - `infra/snapshot-scheduler/worker.ts`: Cloudflare scheduled handler, once per minute. It has no public endpoint, workers.dev or preview URL, and holds no hotel database or record decryption key.
-- The private Sites app/database: validates Ed25519-signed, short-lived requests at `/api/internal/shift-snapshots`, then captures encrypted state for each property's configured shift boundary. Browser and manual connector catch-up use the same capture engine but do not replace automatic operation.
+- The Sites application/database: validates Ed25519-signed, short-lived requests at `/api/internal/shift-snapshots`, then captures encrypted state for each property's configured shift boundary. The public brochure does not authorize this endpoint. Browser and manual connector catch-up use the same capture engine but do not replace automatic operation.
 - `0006_native_snapshot_scheduler.sql`: job lease/cursor and one current native receipt per property. `0007_passon_snapshot_cutoff.sql`: authenticated expiry metadata and a stored snapshot-policy version.
 - Shift pass-on → Snapshots: displays native automatic-check health independently of browser/manual checks. The snapshot viewer still omits some frozen operational details; see known issue **11**. Capturing those details is not equivalent to presenting a complete usable handover.
 
@@ -60,3 +60,7 @@ On failure, inspect scheduled invocation logs, enabled cron, signing secret, app
 For a code rollback, assess endpoint, schema, encryption-metadata and scheduler compatibility first. Stop only this Worker's cron before reverting to an application version that cannot accept its requests. Re-enable it after a compatible deployment and verify a real tick. Browser catch-up is useful but does not satisfy automatic operation while closed. Fictional data may be deliberately reset if incompatible; preserve deployment configuration and credentials unless their replacement is part of the intended work. See [RECOVERY_AND_ROLLBACK.md](RECOVERY_AND_ROLLBACK.md).
 
 Historical native-run evidence and its limits are recorded in [LIVE_TESTING.md](LIVE_TESTING.md). Use [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for the current verification plan.
+
+## Public website routing update
+
+The brochure is public at `https://easyman.app/`; open the authenticated workspace at **https://easyman.app/app** for the procedures in this guide. Website visibility does not grant property access. Keys, database, recovery and signed native snapshot endpoints are unchanged. See [WEBSITE.md](WEBSITE.md).

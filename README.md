@@ -82,3 +82,11 @@ Feedback uses a server-side GitHub App and the separate private repository `tell
 The author's Windows runtime helpers and private local test artifacts are ignored under `.sites-runtime/` and `outputs/`. They are not deployed application dependencies. Preserve the current hosting audience unless the owner requests a change.
 
 Scheduling now counts protected assignments as fixed coverage, uses desired-hour targets, shows Schedule quality, and supports individual time/hour adjustments. Manual hour/rest warning overrides require acknowledgment and a saved reason; hard eligibility and overlap checks remain. Room checks record attendant/category/date and expose full history filters with separate rechecks. Snapshots show frozen operational details/notes; discipline edits preserve acknowledgment. See the issue register and testing checklist for verification and release limits.
+
+## Public website and license
+
+The public introduction is at [easyman.app](https://easyman.app/); the authenticated workspace is at [easyman.app/app](https://easyman.app/app). A separate playable demo is planned next. Website visibility does not grant property-record access. See [WEBSITE.md](WEBSITE.md) for routes, deployment audience and verification.
+
+EasyMan original code/documentation is licensed under **AGPL-3.0-only**. Copyright © 2026 Michael Leza and EasyMan contributors. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md); third-party notices are retained. Modified hosted versions must offer their corresponding source to network users under section 13. The software is provided without warranty.
+
+The public-website update passes **101/101 tests** and TypeScript checks; the earlier 99-test count describes the completed review-fix batch. Current source is available through the website/app license links.

@@ -43,8 +43,12 @@ When the owner proceeds with release, record the exact source/version, release n
 
 No embedded AI, direct PMS connector, customer migration project, notification system or additional modules are added by this plan. The old AI snapshot automation is user-managed cleanup, not a product runtime dependency or an ongoing development task. Broader feature ideas remain outside V1 unless the owner updates the specification.
 
-## Current handoff
+## Completed review-fix handoff (before website update)
 
 The complete suite passes **99/99 tests**, TypeScript checks and the deployment build. New focused cases cover protected full/partial coverage, feasible 8/40-hour allocation, hour/rest override acknowledgment, custom-time constraints/XLSX, real capability/scope exports, inspection details/rechecks/all filters, acknowledgment revisions and frozen snapshot rendering. An actual encrypted storage/readback test preserves custom schedule fields, inspection attendant/category, acknowledgment/history and captured owner/note details. Local browser checks saved/reloaded custom times with a deliberate weekly-limit override, separate inspection/recheck/filter history and an unrelated discipline edit retaining Acknowledged. Tests use fictional records and isolated identities; no hosted examples were reset.
 
-The reviewed corrective work is complete. The next decision is the explicit 1.0 release/audience decision using the recorded evidence and unavailable real-team/device/PMS checks. Continue development only for a newly identified defect or an owner-approved spec update; do not silently add customer migration work or an external testing team requirement.
+The reviewed corrective work is complete. The later owner-approved website/demo update below defines the next presentation work; an explicit 1.0 release decision remains separate. Continue development only for a newly identified defect or an owner-approved spec update; do not silently add customer migration work or an external testing team requirement.
+
+## Owner-requested public website update
+
+Build/publish a professional public brochure at the existing domain; move the authenticated workspace entry to `/app` without changing operational data or infrastructure. License original EasyMan material under AGPL-3.0-only as selected by the owner. See [WEBSITE.md](WEBSITE.md). The owner intends to review the website before a separate isolated playable demo is built. Public introduction is distinct from declaring a live customer service or tagging 1.0.
