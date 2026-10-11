@@ -129,3 +129,7 @@ Browser evidence: pending warning rejection; adjusted shift and override reason 
 ## Public website update
 
 The owner requested a public product introduction. The homepage now serves the brochure; use **https://easyman.app/app** for the authenticated workspace. This intentionally replaces the owner-private hosting audience with a public brochure plus application-enforced account/property authorization. Older results describing the private Site gate remain historical evidence, not the current public-page behavior. New invitations/sign-in return to `/app`; legacy property/invitation links remain supported. No hosted data is reset and the native scheduler endpoints are unchanged. See WEBSITE.md for current verification and LICENSING.md for AGPL-3.0-only.
+
+## Demo isolation update
+
+The demo is a separate public static Site/origin at https://demo.easyman.app, with no database bindings, environment variables, MCP or accounts. Website links distinguish demo and sign-in. Local browser tests with storage/network APIs instrumented to throw exercised generation/publication, XLSX download, kept housekeeping assignments/cleaning/rebalance, valid and ambiguous PMS imports, pass-on completion/frozen examples, editable configuration, reset and refresh. After removing a dependency’s browser warning-preference lookup, spreadsheet export records zero storage/network API attempts. These checks use fictional data; no real property records or keys are copied into the demo. See DEMO.md for current deployment and evidence limits.

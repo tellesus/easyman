@@ -73,3 +73,7 @@ All review fixes and C1/C2 are complete. Owner-private publication is a test can
 ## Public website / app routing and license
 
 `app/marketing.tsx` and `app/marketing.css` provide the public brochure at `/`. Static fictional feature previews are interactive illustrations, not an operational demo. `/app` authenticates server-side before rendering the workspace; existing APIs still enforce account/property/action/scope/session access. Legacy property/invitation routes forward to `/app`, and new invitation links/sign-in returns use that path. `/license`, robots and sitemap describe the public pages and source offer. The public hosting audience exposes the brochure; it does not grant property access. DNS, database, native scheduler and secrets are unchanged. Original material is AGPL-3.0-only with retained vendor notices. See WEBSITE.md and LICENSING.md.
+
+## Interactive demo
+
+The independent demo is at **https://demo.easyman.app/**; registered-user sign-in remains **https://easyman.app/app**. The demo uses the shared workspace with an explicit in-memory runtime, static hosting and no database, credentials, authentication or persistent browser storage. Reset/refresh starts fresh examples. Cloud-dependent account actions are explained as unavailable, feedback is a local preview, and snapshots are labeled fictional. Real spreadsheet exports and supplied PMS-report/JSON examples work locally. See [DEMO.md](DEMO.md). The updated complete suite passes **107/107 tests** and TypeScript checks. Earlier 99/101 counts describe earlier batches.

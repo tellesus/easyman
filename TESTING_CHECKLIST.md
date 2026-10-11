@@ -154,4 +154,14 @@ All original review fixes and C1/C2 are complete. The unchecked reusable checkli
 - [ ] Open `/app` while signed out; expect sign-in before a workspace renders. Anonymous operational API requests must return 401 with no records.
 - [ ] Sign in with the existing owner and open `/app`; confirm the same property and account keys still work.
 - [ ] Follow a property/invitation link; confirm the reference survives navigation/sign-in.
-- [ ] Check footer and Account options license/source notices. A playable demo remains deferred until website review.
+- [ ] Check footer and Account options license/source notices. The separate playable demo is covered below and in DEMO.md.
+
+## Isolated public demo checks
+
+- [ ] Follow Try the demo from the website; verify demo.easyman.app opens without login and the temporary-fictional-data banner remains visible.
+- [ ] Try schedule generation/edit/publication and XLSX export; try housekeeping progress/kept assignments/rebalance and prepared PMS files with validation.
+- [ ] Try pass-on notes/completion and the labeled frozen example; inspect a recheck and fictional personnel record.
+- [ ] Rename the fictional property, move between modules, then reset and refresh; verify the initial property returns. Another tab must have independent state.
+- [ ] Check feedback preview and unavailable submission; check explanations for team/account/recovery features.
+- [ ] Check narrow layout, keyboard controls and reset-dialog focus/Escape.
+- [ ] Verify the signed-in app still requires authentication and its APIs reject anonymous/spoofed identities. Demo hosting has no storage bindings or secrets; its page makes no operational API or persistent-browser-storage calls.

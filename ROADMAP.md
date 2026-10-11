@@ -51,4 +51,8 @@ The reviewed corrective work is complete. The later owner-approved website/demo 
 
 ## Owner-requested public website update
 
-Build/publish a professional public brochure at the existing domain; move the authenticated workspace entry to `/app` without changing operational data or infrastructure. License original EasyMan material under AGPL-3.0-only as selected by the owner. See [WEBSITE.md](WEBSITE.md). The owner intends to review the website before a separate isolated playable demo is built. Public introduction is distinct from declaring a live customer service or tagging 1.0.
+Build/publish a professional public brochure at the existing domain; move the authenticated workspace entry to `/app` without changing operational data or infrastructure. License original EasyMan material under AGPL-3.0-only as selected by the owner. See [WEBSITE.md](WEBSITE.md). The owner approved and implemented the separate isolated playable demo described in DEMO.md. Public introduction is distinct from declaring a live customer service or tagging 1.0.
+
+## Public demo completed
+
+The owner-approved demo runs on its own origin and static Site. Memory-only edits, reset/refresh, guided starting activities, fictional PMS files, illustrative snapshots and real exports are implemented. The website links to it separately from registered-user sign-in. The signed-in app retains its storage, account, recovery, feedback and native-snapshot features. Validation and maintenance are in DEMO.md. This does not announce official 1.0 or customer availability.

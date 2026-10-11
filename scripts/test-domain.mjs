@@ -3,7 +3,7 @@ registerHooks({resolve(specifier,context,next){return next(specifier.startsWith(
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 const { seed, generateSchedule, assignmentError, balanceBoard, managementGraph, lineage, validateImport, days, mergeRows } = await import('../app/domain.ts');
-import { createKey, encrypt, decrypt, encryptBackup, decryptBackup } from '../app/vault.ts';
+const { createKey, encrypt, decrypt, encryptBackup, decryptBackup } = await import('../app/vault.ts');
 const {saveEmployeeProfile}=await import('../app/employee-editor.ts');
 const {invalidateAssignmentPublications}=await import('../app/domain.ts');
 

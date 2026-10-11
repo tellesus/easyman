@@ -85,8 +85,12 @@ Scheduling now counts protected assignments as fixed coverage, uses desired-hour
 
 ## Public website and license
 
-The public introduction is at [easyman.app](https://easyman.app/); the authenticated workspace is at [easyman.app/app](https://easyman.app/app). A separate playable demo is planned next. Website visibility does not grant property-record access. See [WEBSITE.md](WEBSITE.md) for routes, deployment audience and verification.
+The public introduction is at [easyman.app](https://easyman.app/); the authenticated workspace is at [easyman.app/app](https://easyman.app/app). Try the separate [interactive demo](https://demo.easyman.app/) without signing in. It uses temporary fictional data and resets on refresh. Website visibility does not grant property-record access. See [WEBSITE.md](WEBSITE.md) for routes, deployment audience and verification.
 
 EasyMan original code/documentation is licensed under **AGPL-3.0-only**. Copyright © 2026 Michael Leza and EasyMan contributors. See [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md); third-party notices are retained. Modified hosted versions must offer their corresponding source to network users under section 13. The software is provided without warranty.
 
 The public-website update passes **101/101 tests** and TypeScript checks; the earlier 99-test count describes the completed review-fix batch. Current source is available through the website/app license links.
+
+## Interactive demo
+
+The independent demo is at **https://demo.easyman.app/**; registered-user sign-in remains **https://easyman.app/app**. The demo uses the shared workspace with an explicit in-memory runtime, static hosting and no database, credentials, authentication or persistent browser storage. Reset/refresh starts fresh examples. Cloud-dependent account actions are explained as unavailable, feedback is a local preview, and snapshots are labeled fictional. Real spreadsheet exports and supplied PMS-report/JSON examples work locally. See [DEMO.md](DEMO.md). The updated complete suite passes **107/107 tests** and TypeScript checks. Earlier 99/101 counts describe earlier batches.
