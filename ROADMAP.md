@@ -10,20 +10,20 @@ Finding 12 is withdrawn as a legacy-data compatibility requirement. Incompatible
 
 ## 2. Fix the known workflow and access defects
 
-The following is the proposed implementation order within the agreed scope. Issue numbers remain stable so earlier discussion can be followed. First batch completed and locally verified: **1, 2, 5, 7, 8**. Second batch completed and locally verified: **3, 4, 14**. The remaining **6 active findings (6, 9, 10, 11, 13, 15)** and coverage checks C1/C2 are pending.
+The following is the proposed implementation order within the agreed scope. Issue numbers remain stable so earlier discussion can be followed. First batch completed and locally verified: **1, 2, 5, 7, 8**. Second batch completed and locally verified: **3, 4, 14**. Final batch completed and locally verified: **6, 9, 10, 11, 13, 15**, plus **C1/C2**. No original review fixes remain open.
 
 | Work group | Review IDs | Required outcome |
 | --- | --- | --- |
 | Preserve work and enforce authority — fixed, locally verified | 1, 2, 5, 8 | Employee edits preserve availability/reporting; authorized shift reassignment and narrow edits persist; revoked admin sessions cannot approve recovery. |
 | Make daily housekeeping actionable — fixed, locally verified | 3, 4, 14 | Scoped staff see correct service; managers select the available daily pool; room-type defaults initialize scores. |
-| Make schedule results and publication reliable — 7 fixed | 6, 7, 9, 10 | Fixed coverage is counted; both weeks become draft after moves; desired hours influence allocation; manual maximum-hour violations require a deliberate warning/override path. |
-| Finish historical views and action controls | 11, 13, 15 | Frozen pass-on details are usable; unrelated discipline edits retain acknowledgment; exports use real capability/scope checks. |
+| Make schedule results and publication reliable — fixed, locally verified | 6, 7, 9, 10 | Fixed coverage is counted; both weeks become draft after moves; desired hours influence allocation; manual maximum-hour violations require a deliberate warning/override path. |
+| Finish historical views and action controls — fixed, locally verified | 11, 13, 15 | Frozen pass-on details are usable; unrelated discipline edits retain acknowledgment; exports use real capability/scope checks. |
 
 For each correction, reproduce the issue with synthetic data, fix the actual workflow, add a focused regression where useful, and record the check result. Use fresh generated examples if a correct schema/data standard makes existing examples incompatible. Do not spend time preserving old dummy data for its own sake.
 
-Daily attendance is an explicit saved roster with optional authorized schedule suggestions. Remaining interaction decisions include intentional hour-limit warning overrides and complete frozen pass-on details. The behavior above is required; the review's example solutions are not extra approved features.
+Daily attendance is an explicit saved roster with optional authorized schedule suggestions. Manual hour/rest overrides now require a warning acknowledgment and recorded reason; the snapshot viewer exposes complete frozen operational details. The behavior above is required; the review's example solutions are not extra approved features.
 
-Also verify/complete the original-scope coverage checks **C1** (individual shift-time adjustment) and **C2** (room-check attendant/category details and history filters), recorded in the issue register. Current controls do not demonstrate the full original requirements. These are completeness checks alongside the corresponding module fixes, not newly requested product scope.
+Completed the original-scope coverage checks **C1** (individual shift-time adjustment) and **C2** (room-check attendant/category details and history filters), recorded in the issue register. Individual assignment times and inspection detail/history filters are implemented and locally verified. These completed original-scope checks were not new product scope.
 
 ## 3. Verify the candidate on this computer
 
@@ -42,3 +42,9 @@ When the owner proceeds with release, record the exact source/version, release n
 ## Boundaries of this roadmap
 
 No embedded AI, direct PMS connector, customer migration project, notification system or additional modules are added by this plan. The old AI snapshot automation is user-managed cleanup, not a product runtime dependency or an ongoing development task. Broader feature ideas remain outside V1 unless the owner updates the specification.
+
+## Current handoff
+
+The complete suite passes **99/99 tests**, TypeScript checks and the deployment build. New focused cases cover protected full/partial coverage, feasible 8/40-hour allocation, hour/rest override acknowledgment, custom-time constraints/XLSX, real capability/scope exports, inspection details/rechecks/all filters, acknowledgment revisions and frozen snapshot rendering. An actual encrypted storage/readback test preserves custom schedule fields, inspection attendant/category, acknowledgment/history and captured owner/note details. Local browser checks saved/reloaded custom times with a deliberate weekly-limit override, separate inspection/recheck/filter history and an unrelated discipline edit retaining Acknowledged. Tests use fictional records and isolated identities; no hosted examples were reset.
+
+The reviewed corrective work is complete. The next decision is the explicit 1.0 release/audience decision using the recorded evidence and unavailable real-team/device/PMS checks. Continue development only for a newly identified defect or an owner-approved spec update; do not silently add customer migration work or an external testing team requirement.

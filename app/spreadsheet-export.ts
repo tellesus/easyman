@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { days, type State, type Row } from './domain';
+import { effectiveShift, days, type State, type Row } from './domain';
 
 const GREEN = 'FF355F49';
 const PALE = 'FFF1F5ED';
@@ -83,7 +83,7 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
   const status = state.published ? 'Published' : 'Draft';
   const context = `${state.config.name} | ${dateText(dates[0])} – ${dateText(dates[6])} | ${status} | ${state.config.timezone}`;
   const book = newWorkbook(exportedAt);
-  const overview = sheet(book, 'Weekly schedule', 'Weekly schedule', context, 'Times use the property shift templates. Overnight shifts belong to their start date. Hours are scheduling estimates.', [
+  const overview = sheet(book, 'Weekly schedule', 'Weekly schedule', context, 'Times use each assignment’s saved adjustments or its property shift template. Overnight shifts belong to their start date. Hours are scheduling estimates.', [
     { label: 'Employee', width: 25 }, { label: 'Department', width: 21 }, { label: 'Primary position', width: 26 },
     ...dates.map(d => ({ label: dateValue(d).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }), width: 23 })),
     { label: 'Scheduled hours', width: 17, format: '0.##' }, { label: 'Employee ID', width: 24 },
@@ -98,7 +98,7 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
   ]);
   for (const a of assignments) {
     const employee = state.employees.find(e => e.id === a.employee);
-    const shift = state.config.shifts.find(sh => sh.id === a.shift);
+    const shift = effectiveShift(state,a);
     const assignedPosition = state.config.positions.find(p => p.id === a.position);
     details.addRow([
       text(a.employee), employeeName(state, a.employee), nameFor(state.config.departments, assignedPosition?.department || employee?.department || ''),
@@ -117,12 +117,12 @@ export async function buildScheduleExport(state: State, exportedAt = new Date())
     const row = overview.addRow([
       text(e.name), nameFor(state.config.departments, e.department), nameFor(state.config.positions, e.position),
       ...dates.map(d => own.filter(a => a.date === d).map(a => {
-        const shift = state.config.shifts.find(sh => sh.id === a.shift);
+        const shift = effectiveShift(state,a);
         return shift ? `${text(shift.name)} ${shift.start}–${shift.end}${shift.end <= shift.start ? ' (+1 day)' : ''}\n${nameFor(state.config.positions, a.position)}` : 'Unknown shift';
       }).join('\n') || 'Day off'),
       null, text(e.id),
     ]);
-    row.getCell(11).value = { formula: `SUMPRODUCT(('Shift details'!$A$6:$A$${lastDetail}=L${row.number})*'Shift details'!$J$6:$J$${lastDetail})`, result: own.reduce((total, a) => total + number(state.config.shifts.find(sh => sh.id === a.shift)?.hours), 0) };
+    row.getCell(11).value = { formula: `SUMPRODUCT(('Shift details'!$A$6:$A$${lastDetail}=L${row.number})*'Shift details'!$J$6:$J$${lastDetail})`, result: own.reduce((total, a) => total + number(effectiveShift(state,a)?.hours), 0) };
     row.height = Math.max(64, ...dates.map(d => own.filter(a => a.date === d).length * 44));
   }
   finish(overview, employees.length, 68);

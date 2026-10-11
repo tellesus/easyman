@@ -40,7 +40,7 @@ Invitations, employee/account links, membership changes, key provisioning and se
 - Support passphrase-encrypted account recovery files and administrator-assisted recovery. A different browser must recover the account key; sign-in alone does not transfer it. Incorrect files/passphrases must leave an existing valid key intact.
 - Distinguish account-key recovery, configuration backups, encrypted working copies and shift snapshots. Snapshots cover pass-ons, not a whole-property backup. Losing every authorized key and recovery file prevents plaintext recovery.
 
-These are required behaviors. The current review tracks fixes and remaining gaps, including export action permissions; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). Encryption alone does not establish that every workflow is correct.
+These are required behaviors. The completed review records fixes and verification, including export action permissions; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). Encryption alone does not establish that every workflow is correct.
 
 ## Configuration and setup imports
 
@@ -60,7 +60,7 @@ Desired weekly hours must influence allocation, with clear quality feedback when
 
 **Days off:** prefer both days off together when possible. Each employee file has **OK with split days off**, unchecked by default. When checked, omit that employee's consecutive-days-off preference. Names in desktop and mobile schedules open the employee file. Changing this setting affects subsequent generation; unrelated profile edits must preserve all existing availability rules, including imported ranges and position/shift qualifiers.
 
-Authorized manual actions include adding, removing and reassigning shifts, adjusting shift times, deliberate warning overrides and regenerating selected dates. Manual changes must check constraints; an hours-limit override must be visible and intentional. Hard eligibility/authority constraints remain enforced. The precise warning/override interaction belongs in the fix for issue 10; a silent bypass is a defect.
+Authorized manual actions include adding, removing and reassigning shifts, adjusting shift times, deliberate warning overrides and regenerating selected dates. Manual changes must check constraints; an hours-limit override must be visible and intentional. Hard eligibility/authority constraints remain enforced. Hour/rest overrides require explicit acknowledgment and a recorded reason. The assignment editor supports individual start/end times and scheduled-hour overrides; those values apply to constraints, totals, publication history and exports without changing the shift template.
 
 Partial generation preserves unselected dates. Assignments outside the editor's authority count as fixed coverage on regenerated dates, so already-covered staffing demand is not filled twice. Editing must respect both source and destination employees/dates/weeks.
 
@@ -97,7 +97,7 @@ Export requires the actual account's export capability and authorized data scope
 
 ## Room checks, coaching and discipline
 
-Room check logs record inspector, room, relevant attendant, date/time, result, notes and optional failure category. History can be reviewed by room, inspector, attendant, category, result and date range. A recheck is a separate linked inspection, preserving the original result. Results do not produce automatic discipline or employee-performance scores. Completeness check C2 tracks the original fields/filters not demonstrated by the current UI.
+Room check logs record inspector, room, relevant attendant, date/time, result, notes and optional failure category. History can be reviewed by room, inspector, attendant, category, result and date range. A recheck is a separate linked inspection, preserving the original result. Results do not produce automatic discipline or employee-performance scores. C2 is implemented with attendant/category/date controls and all required history filters.
 
 Training/coaching and discipline support their agreed employee, incident/topic, action, acknowledgment and follow-up fields, explicit scoped access, append-only follow-ups and preserved material revisions. Unrelated edits must not reset acknowledgment or remove prior information. No AI-generated coaching/disciplinary decisions or automated formal corrective-action documents are required.
 

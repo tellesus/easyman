@@ -2,7 +2,7 @@
 
 Documentation aligned October 10, 2026 (America/Chicago).
 
-EasyMan is intended to become a reliable hotel operations product. The hosted application is currently a development/testing environment with fictional data and no customers. A reachable domain or a `1.0.0` build label does not establish official release readiness. [CURRENT_SPEC.md](CURRENT_SPEC.md) defines the agreed behavior; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records the remaining implementation gaps.
+EasyMan is intended to become a reliable hotel operations product. The hosted application is currently a development/testing environment with fictional data and no customers. A reachable domain or a `1.0.0` build label does not establish official release readiness. [CURRENT_SPEC.md](CURRENT_SPEC.md) defines the agreed behavior; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records completed corrections and verification limits.
 
 This file preserves dated observations. It does not claim those tests were repeated during documentation alignment or that passing examples establish every workflow combination. Use [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md) for the next run and [ROADMAP.md](ROADMAP.md) for the remaining work.
 
@@ -87,7 +87,7 @@ The latest source also implements exclusion, at the snapshot boundary, of items 
 
 The latest recorded full application check run at source **`7e283d3617701c7379dc63ed47c58bb5c67fba65`** is **77 tests passed, TypeScript checks passed and build succeeded**. Earlier 68- and 73-test totals described earlier revisions. The 77-test suite was not rerun for documentation alignment. Type checks and a fresh build of the two help-text corrections passed; neither corrects the review's behavioral findings.
 
-The subsequent review found additional complete-workflow defects despite that passing suite. Its active findings and pending regressions are in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md). Neither these observations nor build metadata establish an official `v1.0.0` release/tag or finished acceptance.
+The subsequent review found additional complete-workflow defects despite that passing suite. Its findings and completed regressions are in [KNOWN_ISSUES.md](KNOWN_ISSUES.md) and [TESTING_CHECKLIST.md](TESTING_CHECKLIST.md). Neither these observations nor build metadata establish an official `v1.0.0` release/tag or finished acceptance.
 
 ## Hosting record and operational references
 
@@ -118,4 +118,10 @@ The first fixes resolve review IDs **1, 2, 5, 7 and 8**. A complete **84-test** 
 
 The second batch resolves review IDs **3, 4 and 14**. All **90 tests**, type checks and the deployment build passed. Synthetic encrypted scoped recipients and actual storage readback verified task service with the daily plan withheld and encrypted roster persistence. The device-only browser imported six fictional departures/stayovers, selected three attendants and obtained 3/3/2.25 workload points. Removing an attendant after the explicit lock-release warning, rebalancing and reloading retained the two-person roster and cleaning progress. Add room verified suite/queen defaults and deliberate override/reset controls; a fictional suite persisted its 2-point score after confirmed save/reload. No hosted example records were reset.
 
-The first rapid new-room reload exposed a save-indicator race: Saved remained visible during the pre-save delay. That observation was corrected, not recorded as a successful persistence check. Saving now appears immediately, stale queued completion cannot clear newer pending work, and a before-leaving handler warns while saves are pending. The browser verified immediate Saving securely and later successful persistence. The native leave-warning dialog itself was not separately exercised in this check. Six original review findings and C1/C2 remain pending.
+The first rapid new-room reload exposed a save-indicator race: Saved remained visible during the pre-save delay. That observation was corrected, not recorded as a successful persistence check. Saving now appears immediately, stale queued completion cannot clear newer pending work, and a before-leaving handler warns while saves are pending. The browser verified immediate Saving securely and later successful persistence. The native leave-warning dialog itself was not separately exercised in this check. Those remaining findings and C1/C2 are now completed in the final batch below.
+
+## Final corrective batch — October 10, 2026
+
+The complete suite passes **99/99 tests**, TypeScript checks and the deployment build. New focused cases cover protected full/partial coverage, feasible 8/40-hour allocation, hour/rest override acknowledgment, custom-time constraints/XLSX, real capability/scope exports, inspection details/rechecks/all filters, acknowledgment revisions and frozen snapshot rendering. An actual encrypted storage/readback test preserves custom schedule fields, inspection attendant/category, acknowledgment/history and captured owner/note details. Local browser checks saved/reloaded custom times with a deliberate weekly-limit override, separate inspection/recheck/filter history and an unrelated discipline edit retaining Acknowledged. Tests use fictional records and isolated identities; no hosted examples were reset.
+
+Browser evidence: pending warning rejection; adjusted shift and override reason after save/reload; separate failed inspection/passing recheck with attendant/category/history filters; subject-only discipline revision retaining Acknowledged after reload. Scoped export behavior, frozen snapshot content and protected generation are isolated synthetic tests rather than real hosted-team checks. No official 1.0 tag or public audience change was made.

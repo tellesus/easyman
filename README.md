@@ -2,7 +2,7 @@
 
 **Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
 
-EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. The current review has 6 open findings after fixes 1, 2, 3, 4, 5, 7, 8 and 14; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. All 14 actionable original review findings and completeness checks C1/C2 are fixed and locally verified; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Start with the current documents
 
@@ -39,7 +39,7 @@ npm run typecheck
 npm run build
 ```
 
-The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The second fix batch now passes 90 tests, type checks and the deployment build. Consult the checklist for evidence and remaining issues.
+The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The completed corrective work passes 99 tests, type checks and the deployment build. Consult the checklist for evidence and remaining issues.
 
 ## Local database
 
@@ -59,7 +59,7 @@ In Scheduling, click an employee name to open their file. **OK with split days o
 
 In Housekeeping, select a date and use **Set up day / Update day**. Copy the provided room-catalog prompt into the hotel's approved external LLM with its PMS report, then upload/paste the JSON result and review validation before applying. Manual room selection is also available. Omitted rooms have No service. First-time setup balances by default; same-day updates retain attendants unless balancing is selected. **Keep with this attendant** protects an assignment during rebalancing, while DND is a separate hold. Choose who is **Working today** during setup; only the saved daily roster receives rebalance assignments. Schedule suggestions are optional and require the relevant access. Removing staff releases their assignments/locks after a warning while retaining cleaning progress. An empty roster leaves rooms unassigned. Scoped attendants see the service stored on their dated tasks. Add room uses the selected room type’s workload default, with an explicit override/reset option.
 
-**Export schedule** produces a weekly matrix and shift detail. **Export room board** produces a manager summary/overview and one portrait Letter handout per attendant. Select an attendant tab and print the current sheet. The handout has service/priority, Done checks and notes; an X indicates already marked clean at export. Internal IDs and assignment-lock fields are omitted. Room numbers retain leading zeros and numeric hours/points remain numeric. Files are `.xlsx` for Excel, LibreOffice and Google Sheets import; file edits do not update EasyMan. Issue 15 tracks export capability enforcement.
+**Export schedule** produces a weekly matrix and shift detail. **Export room board** produces a manager summary/overview and one portrait Letter handout per attendant. Select an attendant tab and print the current sheet. The handout has service/priority, Done checks and notes; an X indicates already marked clean at export. Internal IDs and assignment-lock fields are omitted. Room numbers retain leading zeros and numeric hours/points remain numeric. Files are `.xlsx` for Excel, LibreOffice and Google Sheets import; file edits do not update EasyMan. Exports enforce the actual account’s capability and authorized employee/module scope.
 
 ## Accounts and background work
 
@@ -80,3 +80,5 @@ Feedback uses a server-side GitHub App and the separate private repository `tell
 - `.openai/hosting.json`: managed Site identity and storage binding.
 
 The author's Windows runtime helpers and private local test artifacts are ignored under `.sites-runtime/` and `outputs/`. They are not deployed application dependencies. Preserve the current hosting audience unless the owner requests a change.
+
+Scheduling now counts protected assignments as fixed coverage, uses desired-hour targets, shows Schedule quality, and supports individual time/hour adjustments. Manual hour/rest warning overrides require acknowledgment and a saved reason; hard eligibility and overlap checks remain. Room checks record attendant/category/date and expose full history filters with separate rechecks. Snapshots show frozen operational details/notes; discipline edits preserve acknowledgment. See the issue register and testing checklist for verification and release limits.

@@ -2,7 +2,7 @@
 
 Reviewed October 10, 2026 (America/Chicago), against the original V1 specification and the owner's subsequent refinements. Reviewed application source: `7e283d3617701c7379dc63ed47c58bb5c67fba65`. Documentation is now aligned to [CURRENT_SPEC.md](CURRENT_SPEC.md); a later documentation-only revision does not mean these code findings are fixed.
 
-The original review numbered 15 findings. **8 findings are fixed and locally verified (1, 2, 3, 4, 5, 7, 8, 14); 6 remain open. Finding 12 is withdrawn as required legacy-data compatibility work.** Its number is retained for continuity. EasyMan is intended for real operational use, but there are currently no customers and all property records are fictional. Incompatible examples may be reset after a fix; the live-use scope and new-data correctness requirements remain intact. The initial documentation pass applied no behavioral fixes. The first implementation batch below now records its verified corrections. Twelve focused scenarios were reproduced with fictional data, actual storage handlers/encryption, or the actual UI form/callback code. Four additional findings are directly visible in the rendering/configuration paths; the two narrow-permission scenarios are grouped into one finding below. No property data, access settings, automations, or application behavior were changed by the review. Review harnesses are checkout-local and ignored by Git.
+The original review numbered 15 findings. **All 14 active original findings are fixed and locally verified; none remain open. Finding 12 is withdrawn as required legacy-data compatibility work.** Its number is retained for continuity. EasyMan is intended for real operational use, but there are currently no customers and all property records are fictional. Incompatible examples may be reset after a fix; the live-use scope and new-data correctness requirements remain intact. The initial documentation pass applied no behavioral fixes. The implementation batches below record all verified corrections. Twelve focused scenarios were reproduced with fictional data, actual storage handlers/encryption, or the actual UI form/callback code. Four additional findings are directly visible in the rendering/configuration paths; the two narrow-permission scenarios are grouped into one finding below. No property data, access settings, automations, or application behavior were changed by the review. Review harnesses are checkout-local and ignored by Git.
 
 Original source links below point to the reviewed GitHub revision. Fixed-status paragraphs describe the current corrections.
 
@@ -58,7 +58,11 @@ Two reproduced cases expose hidden permission dependencies. A user with Scheduli
 
 Source: [save permissions](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/team-client.ts#L14), [publication permission](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/access.ts#L12), [employee editor](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L111).
 
-### 6. Scoped schedule generation can overstaff covered shifts
+### 6. Scoped schedule generation can overstaff covered shifts — Fixed and locally verified
+
+**Current status:** Authorized full/partial generation treats rows outside both editing/availability scopes as fixed coverage. It retains those rows once, subtracts covered demand, counts their hours/rest, and never moves them during repair. Regression cases cover both callbacks and protected adjusted shifts.
+
+**Original finding:**
 
 The UI retains assignments outside the editor's authority, but the generator ignores those assignments on regenerated dates and tries to fill the full staffing requirement again. Reproduction: one required position, already filled by a protected assignment, became two assignments after generation. Preserve protected assignments as fixed coverage and generate only remaining demand.
 
@@ -86,19 +90,31 @@ Using the same revoked administrator application-session cookie, the workspace r
 
 Source: [recovery approval](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/api/recovery/route.ts#L3).
 
-### 9. Desired weekly hours are not used as scheduling targets
+### 9. Desired weekly hours are not used as scheduling targets — Fixed and locally verified
+
+**Current status:** Candidate ranking now uses the change in distance from each desired weekly target, while coverage/eligibility and maximums remain constraints. The reproduced feasible 8/40 allocation passes. Schedule quality exposes coverage, preferred-shift satisfaction, desired-hour differences and constraint warnings instead of hiding hour messages.
+
+**Original finding:**
 
 The generator balances raw hours and enforces maximums, but `employee.hours` only contributes a final under-hours message. Reproduction gave an 8-hour-target employee and a 40-hour-target employee 24 hours each, even though 8/40 was feasible with unchanged coverage and preferences. Those under-hours messages are also not shown by the generation callback. Desired hours should influence candidate ranking and be included in the quality summary.
 
 Source: [generator](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/domain.ts#L65), [generation feedback](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L81).
 
-### 10. Manual scheduling bypasses configured weekly maximums
+### 10. Manual scheduling bypasses configured weekly maximums — Fixed and locally verified
+
+**Current status:** Manual saves calculate the edited employee’s destination-week total, including adjusted hours. Hour/rest warnings require an explicit checkbox and reason, stored with the assignment and visible on reopening. Qualification, availability, overlap and authority stay hard checks. Browser checks verified rejection without acknowledgment and save/reload of a deliberate override.
+
+**Original finding:**
 
 The generator enforces maximum hours, but manual assignment validation checks qualification, availability, overlap and rest only. Reproduction saved 48 hours against a configured 40-hour maximum without an override warning or acknowledgment. If overrides are allowed, make the exceeded limit and deliberate override explicit.
 
 Source: [assignment checks](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/domain.ts#L56), [manual save](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L112).
 
-### 11. Snapshot data is preserved but much of it is unusable in the viewer
+### 11. Snapshot data is preserved but much of it is unusable in the viewer — Fixed and locally verified
+
+**Current status:** The read-only viewer renders frozen notes/history, owner, priority, category, room, follow-up due, creation/completion and escalation, using the captured policy time zone. New pass-ons store an owner label in their encrypted value. Older fictional captures can show their recorded owner ID without inventing a frozen name from the current directory. Rendering/storage checks verify frozen content and do not mutate the capture.
+
+**Original finding:**
 
 The snapshot modal shows only subject, status and original description. It does not show frozen notes/history, owner, priority, room, follow-up time or escalation. An important update added as a note before handover is stored but absent from the historical handover screen. Render the operational details from the frozen item, rather than sending users to the later live record.
 
@@ -114,7 +130,11 @@ The requirement for new data remains strict: at the historical shift boundary, e
 
 Source: [capture filter](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/snapshot-server.ts#L39), [viewer fallback](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L40).
 
-### 13. Editing discipline can reset acknowledgment to Pending
+### 13. Editing discipline can reset acknowledgment to Pending — Fixed and locally verified
+
+**Current status:** The form defaults to the saved acknowledgment, and the shared personnel-save path retains it if absent. Browser creation as Acknowledged, an unrelated subject edit and reload retained Acknowledged with the prior version in revision history.
+
+**Original finding:**
 
 The acknowledgment select has no default bound to the saved record. It opens at its first option, Pending, and the save always writes that value. An unrelated edit can therefore replace Acknowledged or Declined. Bind the saved value and preserve it unless deliberately changed. This finding comes from the form/save path rather than a live HR-record test.
 
@@ -130,7 +150,11 @@ Room types expose configurable default workload points, but Add room starts its 
 
 Source: [new-room form](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/workspace.tsx#L139), [type default](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/config-editor.tsx#L6), [workload calculation](https://github.com/tellesus/easyman/blob/064791a8c9465454ab0109c111ad59e8350914f8/app/domain.ts#L108).
 
-### 15. Export permission exists but the export controls do not enforce it
+### 15. Export permission exists but the export controls do not enforce it — Fixed and locally verified
+
+**Current status:** Schedule/board export controls and handlers use the real account’s OperationalData.Export plus module-view capability and employee scope. The copied export state excludes rows outside that intersection. Briefing export also requires property operational-export access. Missing/disabled/scoped cases are tested; the sample visual role is no longer the permission decision.
+
+**Original finding:**
 
 OperationalData.Export is a defined manager capability, but spreadsheet exports check the sample Frontline preview setting rather than this capability. A user who can view scheduling/housekeeping but lacks export permission is still offered export. Server data scoping remains in place; this is an action-permission gap, not proof of unrelated-record disclosure. Use the actual account's capability and authorized scope for the export controls.
 
@@ -142,15 +166,21 @@ The documentation alignment replaces the contradictory release/development label
 
 Comparison with the original specification also identifies two completeness checks to carry forward. These are not added feature scope or newly reproduced defects:
 
-- **C1 — Manual shift times:** original scheduling requirements allow adjusting shift times. The inspected assignment form selects a shift template; it does not demonstrate a per-assignment time adjustment. Verify/complete this intended workflow alongside scheduling fixes.
-- **C2 — Room-check detail and review:** original requirements include an optional failure category and relevant attendant, and history review by room, inspector, attendant, category, result and date range. The inspected form/result tabs do not demonstrate the complete workflow. Verify/complete the original requirements; do not silently reduce them to the current controls.
+- **C1 — Manual shift times:** original scheduling requirements allow adjusting shift times. The inspected assignment form selects a shift template; it does not demonstrate a per-assignment time adjustment. Completed: each assignment can use adjusted start/end times and scheduled hours. Constraints, weekly totals, desktop/mobile views, frozen publication history and spreadsheet exports use those adjustments; the template stays unchanged.
+- **C2 — Room-check detail and review:** original requirements include an optional failure category and relevant attendant, and history review by room, inspector, attendant, category, result and date range. Completed: the inspection form records attendant, optional failure category and date/time. History supports room, inspector, attendant, category, result/follow-up and inclusive property-local date filters, with separate linked rechecks.
 
 ## Review limits and next steps
 
 These findings are code-backed development defects, not incidents reported by a customer property. The focused review used this computer, fictional data and isolated identities. Actual team/device/PMS validation remains unavailable, separately from the synthetic checks we can perform now. The native Cloudflare scheduler is appropriate application infrastructure; the external-LLM housekeeping preparation workflow was explicitly requested. Neither is counted as a workaround defect.
 
-The earlier automated checks remain useful evidence for their scenarios, but did not cover these complete workflow combinations. The first batch fixes 1, 2, 5, 7 and 8. Its full 84-test run, type checks, build and local employee-editor checks passed. The second batch fixes 3, 4 and 14 with 90 passing tests, type checks, build and local housekeeping/room-form checks. Six other fixes and completeness checks remain pending in [ROADMAP.md](ROADMAP.md). The original private local reproduction harnesses are not portable acceptance tests; promote useful scenarios into the repository tests when fixing the corresponding behavior.
+The earlier automated checks remain useful evidence for their scenarios, but did not cover these complete workflow combinations. The first batch fixes 1, 2, 5, 7 and 8. Its full 84-test run, type checks, build and local employee-editor checks passed. The second batch fixes 3, 4 and 14 with 90 passing tests, type checks, build and local housekeeping/room-form checks. The final batch resolves 6, 9, 10, 11, 13 and 15 plus C1/C2; no original review fixes remain pending. The original private local reproduction harnesses are not portable acceptance tests; promote useful scenarios into the repository tests when fixing the corresponding behavior.
 
 ## Additional correction found during housekeeping verification
 
-A rapid reload during the 600 ms save delay could lose the latest edit while the indicator still said Saved. The indicator now becomes Saving securely immediately; an older queued save cannot mark newer edits saved, and the browser receives a before-leaving warning while a save remains pending or failed. Local browser checks verified immediate pending status and a new suite retaining its type-default score after confirmed save/reload. A focused queued-generation regression passed. This newly found correction is separate from the original numbered review; six original findings remain open.
+A rapid reload during the 600 ms save delay could lose the latest edit while the indicator still said Saved. The indicator now becomes Saving securely immediately; an older queued save cannot mark newer edits saved, and the browser receives a before-leaving warning while a save remains pending or failed. Local browser checks verified immediate pending status and a new suite retaining its type-default score after confirmed save/reload. A focused queued-generation regression passed. This newly found correction is separate from the original numbered review; all original findings are now fixed.
+
+## Final corrective batch — October 10, 2026
+
+The complete suite passes **99/99 tests**, TypeScript checks and the deployment build. New focused cases cover protected full/partial coverage, feasible 8/40-hour allocation, hour/rest override acknowledgment, custom-time constraints/XLSX, real capability/scope exports, inspection details/rechecks/all filters, acknowledgment revisions and frozen snapshot rendering. An actual encrypted storage/readback test preserves custom schedule fields, inspection attendant/category, acknowledgment/history and captured owner/note details. Local browser checks saved/reloaded custom times with a deliberate weekly-limit override, separate inspection/recheck/filter history and an unrelated discipline edit retaining Acknowledged. Tests use fictional records and isolated identities; no hosted examples were reset.
+
+All original actionable findings and C1/C2 are complete. Finding 12 remains withdrawn as a requirement to preserve incompatible dummy history. This closes the reviewed work list; it is not an official release tag or a claim of real-team/device/PMS verification.
