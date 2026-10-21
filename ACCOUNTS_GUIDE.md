@@ -29,6 +29,8 @@ Under **My account** or **Account options**, voluntary password changes require 
 
 If both password and login recovery code are lost, an administrator must verify the person, disable the old account and approve/link a replacement account, with authorized key provisioning. Knowing an email alone does not reset an account. Existing ChatGPT accounts retain their separate passphrase-encrypted account-key files and administrator-assisted key recovery.
 
+Password accounts cannot use the older ChatGPT key-replacement route: replacing only the public identity would leave the password/recovery envelopes pointing to a different key. The server rejects both such requests and approval of such a ticket, preserving the password account's identity.
+
 ## Implementation and validation
 
 - Password verification: pinned `@noble/hashes` scrypt, N=32768, r=8, p=3, 32-byte output, independent random salt. This follows a memory/CPU configuration listed in [OWASP password-storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html). Verification uses the platform's timing-safe comparison. A per-isolate capacity guard bounds KDF memory; database IP/account throttles are authoritative across isolates.

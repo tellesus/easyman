@@ -1,5 +1,9 @@
 # EasyMan — hosted testing on easyman.app
 
+## October 21, 2026 — recovery compatibility follow-up
+
+The server rejects using the older ChatGPT administrator key-replacement workflow on a password account, including approval of an existing ticket. Password/recovery envelopes and the account identity therefore remain consistent. The actual encrypted API regression verifies both denials and that the original identity is unchanged. All 127 tests pass again; no hosted property records are changed by this correction.
+
 ## October 20, 2026 — independent staff accounts
 
 The account extension uses real email/password authentication and encrypted identity envelopes, alongside existing ChatGPT sign-in. Local tests use disposable fictional accounts and an isolated `LOCAL-ACCOUNT-TEST` property, with no hosted employee association or real people enrolled. Browser checks confirmed signup → recovery-code screen → zero-access waiting, sign-out/sign-in after local key removal, approved board visibility, own published shifts, and a shift-log update surviving reload. A deliberately inconsistent local fixture initially blocked that update; correcting its boundary metadata made the normal scoped save succeed. The automated regression now exercises the same client save path through actual encrypted API routes.
@@ -146,6 +150,7 @@ The owner requested a public product introduction. The homepage now serves the b
 ## Demo isolation update
 
 The demo is a separate public static Site/origin at https://demo.easyman.app, with no database bindings, environment variables, MCP or accounts. Website links distinguish demo and sign-in. Local browser tests with storage/network APIs instrumented to throw exercised generation/publication, XLSX download, kept housekeeping assignments/cleaning/rebalance, valid and ambiguous PMS imports, pass-on completion/frozen examples, editable configuration, reset and refresh. After removing a dependency’s browser warning-preference lookup, spreadsheet export records zero storage/network API attempts. These checks use fictional data; no real property records or keys are copied into the demo. See DEMO.md for current deployment and evidence limits.
+
 
 
 
