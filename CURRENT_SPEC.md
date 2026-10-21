@@ -1,6 +1,6 @@
 # EasyMan current product specification
 
-Aligned with the owner's decisions through October 11, 2026. **This is the current requirements document.** [IMPLEMENTATION.md](IMPLEMENTATION.md) describes the code present today; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records its known gaps; [ROADMAP.md](ROADMAP.md) orders the remaining work.
+Aligned with the owner's decisions through October 20, 2026. **This is the current requirements document.** [IMPLEMENTATION.md](IMPLEMENTATION.md) describes the code present today; [KNOWN_ISSUES.md](KNOWN_ISSUES.md) records its known gaps; [ROADMAP.md](ROADMAP.md) orders the remaining work.
 
 ## Product intent and current stage
 
@@ -22,6 +22,8 @@ The original **EasyMan — Version 1 Product Specification** supplied by the own
 
 ## Property, employee and access model
 
+Owner update October 20, 2026: independent EasyMan email/password registration and sign-in do not require ChatGPT. Existing trusted ChatGPT sign-in remains available. New accounts from either provider receive no administrator bootstrap or property records and show **Waiting for approval and role assignment**. An authorized administrator/manager adds their request code or invites them, confirms identity, associates an active existing employee, and explicitly assigns access. Matching email never automatically links records. Staff profiles offer approved assigned/all housekeeping boards (view), front-desk log view/create/update, and their own immutable published schedules. Published-only access never exposes live drafts, other employees' schedules, availability/preferences, personnel records or management controls. Managers may delegate only within their own authority; administrator grants remain administrator-only. Disable/revocation remains server-enforced.
+
 Each property is a distinct workspace with its own configuration and operational records. An employee record and a user account are separate concepts; employees need not have accounts, and permissions are explicitly granted to accounts.
 
 Employees have operational profile details, primary and additional department/position associations, qualifications, hire/seniority date, scheduling preferences, desired hours and availability. Personnel information and availability require their own access; viewing a schedule must not expose unrelated sensitive employee fields.
@@ -32,12 +34,14 @@ Invitations, employee/account links, membership changes, key provisioning and se
 
 ## Security, persistence and recovery
 
+Password accounts use independently salted memory-hard scrypt verifiers, 15–128-character passphrases, common-password rejection, throttling, hashed random session tokens and HttpOnly/Secure production cookies. Passwords have no mandatory periodic resets; sessions retain normal expiry. Voluntary password changes require the current password and invalidate older sessions. Saved login recovery codes recover forgotten passwords while preserving the encryption identity; successful recovery rotates the code and invalidates older sessions without changing property roles. Password/recovery-encrypted identity envelopes allow ordinary password sign-in to unlock the same key on another device. Existing ChatGPT key-file/admin recovery remains available. The password service receives a submitted password over TLS; this does not claim zero knowledge against that service. See ACCOUNTS_GUIDE.md for the workflow and verification limits.
+
 - Authenticate the user and enforce property membership, capability and scope on the server. Hosted Site access and in-app property access are separate controls.
 - Encrypt operational record contents in the browser; store ciphertext and wrapped keys with only the metadata needed for authorization and app operations. Separate sensitive record types and wrap keys only for authorized recipients.
 - Maintain session expiry, session review/revocation and removal of access for disabled members. Privileged recovery approval must respect revocation. Recovery bootstrap and privileged approval have distinct purposes.
 - Preserve auditable writes, material revisions, encrypted historical records and attributable security/configuration/export events. Application users cannot silently rewrite immutable history. Infrastructure administrators and delivered application code remain part of the trust boundary.
 - Reject stale concurrent writes rather than silently overwrite another session. Failed saves need a clear failure/retry path and a recoverable local working copy.
-- Support passphrase-encrypted account recovery files and administrator-assisted recovery. A different browser must recover the account key; sign-in alone does not transfer it. Incorrect files/passphrases must leave an existing valid key intact.
+- Support passphrase-encrypted account recovery files and administrator-assisted recovery for ChatGPT identities. Password-account sign-in unlocks its synchronized encrypted identity envelope in another browser; its saved login recovery code supports forgotten-password recovery. Incorrect files/passphrases/passwords must leave an existing valid key intact.
 - Distinguish account-key recovery, configuration backups, encrypted working copies and shift snapshots. Snapshots cover pass-ons, not a whole-property backup. Losing every authorized key and recovery file prevents plaintext recovery.
 
 These are required behaviors. The completed review records fixes and verification, including export action permissions; see [KNOWN_ISSUES.md](KNOWN_ISSUES.md). Encryption alone does not establish that every workflow is correct.
@@ -152,3 +156,4 @@ The owner selected AGPL for hosted-fork source sharing. Original EasyMan code an
 Provide an independent static demo on `demo.easyman.app`, with no database bindings, secrets, authentication, operational API access or persistent browser storage. Reuse EasyMan screens and domain logic through an explicit in-memory runtime. Load fresh fictional schedules, daily housekeeping service/roster, inspections, personnel records and pass-ons with useful current dates. Changes last only in the current tab; reset, refresh or returning from browser back-cache starts fresh. Provide an always-visible demo/fictional/temporary banner, reset confirmation, Things to try, and links to the website and signed-in workspace.
 
 Permit meaningful local edits and real XLSX downloads. Include fictional PMS report/JSON downloads, direct example loading and a validation/mapping example. Account recovery, invitations, session administration and external feedback submission are unavailable with explanations. Snapshot examples must be labeled fictional and must not claim automatic background operation. Preserve every existing authenticated-app feature and security behavior. See DEMO.md for implementation and evidence.
+

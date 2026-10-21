@@ -10,8 +10,9 @@ Commercial use and paid hosting/support are allowed under the license. Distribut
 
 The public source is [tellesus/easyman](https://github.com/tellesus/easyman). It includes application code, dependency manifests/lockfile, build integration, database migrations, infrastructure source and setup instructions. The public website footer and **Account options → License & source** link to `/license`, with source-download and license links and the no-warranty notice. Keep these notices/source offers visible in modified hosted versions and point them to the corresponding version you run.
 
-The root license covers original EasyMan material. Third-party dependencies and retained vendor files remain under their own licenses; this does not relicense another author's work. Preserve existing notices, including `vendor/shadcn-tailwind-4.13.0.LICENSE.md` and `build/sites-vite-plugin.LICENSE`. Package-specific notices ship in the dependencies. No additional restriction on commercial use is added.
+The root license covers original EasyMan material. Third-party dependencies and retained vendor files remain under their own licenses; this does not relicense another author's work. Preserve existing notices, including `vendor/shadcn-tailwind-4.13.0.LICENSE.md` and `build/sites-vite-plugin.LICENSE` and `vendor/noble-hashes-2.4.0.LICENSE`. Package-specific notices ship in the dependencies. No additional restriction on commercial use is added.
 
 `AGPL-3.0-only` fixes the selected license to version 3; it does not automatically authorize later license versions. Public repository visibility alone was not a license grant before this change.
 
 Reference: [AGPL text and identifier (SPDX)](https://spdx.org/licenses/AGPL-3.0-only.html).
+

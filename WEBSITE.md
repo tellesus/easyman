@@ -1,5 +1,7 @@
 # Public website and signed-in app
 
+October 20: `/login` offers independent EasyMan email/password registration and sign-in, with optional existing ChatGPT sign-in. `/app` authenticates through either provider and requires active, explicitly assigned membership; otherwise it shows a zero-access waiting screen. Existing public brochure/demo URLs and authenticated operational API boundaries remain. Password accounts unlock a synchronized encrypted identity envelope; ChatGPT key-file recovery remains separate. See ACCOUNTS_GUIDE.md.
+
 October 11: scheduling feature copy now describes daily staffing targets, overnight eligibility and deliberate missing-shift decisions. The linked isolated demo shares the new workflow; website/app/demo routes, audiences and storage separation are retained. Earlier verification counts below are historical.
 
 Owner-approved update: a professional public introduction at **https://easyman.app/**, with a separate playable demo at https://demo.easyman.app/. This updates the product specification; it does not announce an official 1.0 release or customer availability.

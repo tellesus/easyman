@@ -64,6 +64,13 @@
       "when": 1791685142643,
       "tag": "0008_publication_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792554551887,
+      "tag": "0009_independent_accounts",
+      "breakpoints": true
     }
   ]
 }

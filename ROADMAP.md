@@ -1,5 +1,7 @@
 # EasyMan roadmap to live use
 
+October 20, 2026 owner update: independent staff registration/sign-in, no access before approval/employee association/role assignment, restricted boards/log/own published schedules and solid password/session/recovery behavior are implemented with focused verification. All 127 tests, TypeScript, main/demo builds and hosted synthetic-account checks pass; both deployments succeeded. No actual employees are enrolled during development. See ACCOUNTS_GUIDE.md.
+
 October 11, 2026 approved scheduling extension is implemented and locally verified: daily staffing defaults and independent weekly requirements, overnight eligibility, guided gap decisions including general Manager coverage, combined manual warnings, persistence/permissions/history/exports, and shared isolated demo support. All verification uses fictional records on the owner's computer. TypeScript and all 121 tests pass; current publication evidence is recorded in LIVE_TESTING.md. This is an owner-approved specification update.
 
 Updated October 10, 2026. The goal is a reliable hotel operations application for real daily use. Today all workspaces contain test/example records and there are no customers. [CURRENT_SPEC.md](CURRENT_SPEC.md) defines the requirements; owner changes update that specification. This roadmap does not authorize additional product scope.
@@ -58,3 +60,4 @@ Build/publish a professional public brochure at the existing domain; move the au
 ## Public demo completed
 
 The owner-approved demo runs on its own origin and static Site. Memory-only edits, reset/refresh, guided starting activities, fictional PMS files, illustrative snapshots and real exports are implemented. The website links to it separately from registered-user sign-in. The signed-in app retains its storage, account, recovery, feedback and native-snapshot features. Validation and maintenance are in DEMO.md. This does not announce official 1.0 or customer availability.
+

@@ -1,5 +1,18 @@
 # EasyMan testing checklist — one computer
 
+October 20 independent-account checks:
+
+- [x] New email/password account has no memberships/property data or administrator bootstrap; waiting screen shows a shareable account request code.
+- [x] Independent signup/sign-in restores the same encrypted key after local key removal; no ChatGPT login is required.
+- [x] Real encrypted API approval links an active employee, provisions authorized current/history keys, permits board/log reads and log updates, and exposes only own published schedules.
+- [x] Staff cannot retrieve live drafts, preferences, other employees' schedules, personnel or management endpoints; pending/disabled and revoked sessions are denied.
+- [x] A manager cannot delegate administrator authority or permissions beyond their own grants; approval requires explicit employee association.
+- [x] Password changes/recovery preserve identity, invalidate older sessions, rotate recovery codes and reject old-token replay. Password hashes use independent salts; public credential errors are generic.
+- [x] Configured memory-hard password derivation and timing-safe comparison execute successfully in the actual local Workers runtime.
+- [x] Credential forms use POST fallback and remain disabled until hydrated; passwords cannot be submitted into the address bar by a pre-hydration click.
+- [x] Local fictional staff browser walkthrough: approved boards, own published schedule, shift-log update and reload; 127 automated tests pass.
+- [x] Hosted schema/sign-in verification: native synthetic signup/login/waiting, zero memberships, denied reads/feedback, wrong-password and logged-out replay checks; main/demo deployments and isolation manifest verified. Evidence in LIVE_TESTING.md.
+
 October 11 staffing extension checks (fictional records):
 
 - [x] Focused regressions: aggregate demand, daily zero/mid targets, frozen week/default independence, explicit reset, nonnegative integer validation and authority.
@@ -177,3 +190,5 @@ All original review fixes and C1/C2 are complete. The unchecked reusable checkli
 - [ ] Check feedback preview and unavailable submission; check explanations for team/account/recovery features.
 - [ ] Check narrow layout, keyboard controls and reset-dialog focus/Escape.
 - [ ] Verify the signed-in app still requires authentication and its APIs reject anonymous/spoofed identities. Demo hosting has no storage bindings or secrets; its page makes no operational API or persistent-browser-storage calls.
+
+

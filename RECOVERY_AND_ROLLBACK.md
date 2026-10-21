@@ -4,6 +4,8 @@ EasyMan is intended for reliable live hotel operations. It is currently under de
 
 The procedures below describe the implemented recovery/backup paths and the intended protection of records during eventual live use. For current development, incompatible examples may be reset and regenerated instead of adding migration work solely to preserve them. A deliberate data reset is different from a code rollback or a recovery test. There is no new reset action introduced by this guide, and this documentation update does not reset data.
 
+Independent EasyMan password accounts unlock their encrypted identity envelope at sign-in in another browser. Save the separate **login recovery code/file** at registration; it recovers a forgotten password while preserving the same identity. This differs from the older account-key file below. See [ACCOUNTS_GUIDE.md](ACCOUNTS_GUIDE.md) for password changes, recovery-code rotation and replacement-account approval if both password and code are lost.
+
 ## Recovery and backup files
 
 | File | Where to create it | What it restores |
@@ -16,7 +18,7 @@ For records that need to be retained, keep recovery/backup files in protected st
 
 During recovery testing, retain a working account key until the recovery file has opened the intended records in another browser. If the purpose is instead to replace disposable incompatible examples, record that reset and generate data that follows the corrected standard. In either case, keep private keys, passphrases and hosting credentials out of chat, source, GitHub and feedback issues.
 
-## Open an existing account in another browser
+## Open an existing ChatGPT account in another browser
 
 1. Keep the original browser available and confirm Encrypted · saved.
 2. Export an account recovery file from Account options using a passphrase chosen in the app.
@@ -70,3 +72,4 @@ Submit bugs through EasyMan's feedback form to the private feedback repository. 
 ## Public website routing update
 
 The brochure is public at `https://easyman.app/`; open the authenticated workspace at **https://easyman.app/app** for the procedures in this guide. Website visibility does not grant property access. Keys, database, recovery and signed native snapshot endpoints are unchanged. See [WEBSITE.md](WEBSITE.md).
+

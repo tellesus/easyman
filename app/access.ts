@@ -15,7 +15,7 @@ export const fields: Record<string,{read:string;write:string}> = {
 export function permits(member: Pick<Member,'status'|'grants'|'employeeId'|'userId'>,capability:string,subject:string,directory:Directory):boolean {
   if(member.status!=='active')return false;
   return member.grants.some(g=>{
-    if(g.capability!=='*'&&g.capability!==capability)return false;
+    if(g.capability!=='*'&&g.capability!==capability&&!(capability==='Scheduling.View'&&g.capability==='Scheduling.Published'))return false;
     if(g.scope.type==='property')return true;
     const employee=directory.employees.find(e=>e.id===subject);
     if(g.scope.type==='employees')return (g.scope.ids||[]).includes(subject);
@@ -27,6 +27,29 @@ export function permits(member: Pick<Member,'status'|'grants'|'employeeId'|'user
     return lineage(subject,directory.employees,directory.reporting).includes(member.employeeId);
   });
 }
+export function canReadResource(member:Member,record:Pick<Resource,'field'|'subject'>,directory:Directory){
+  if(!fields[record.field]||!permits(member,fields[record.field].read,record.subject,directory))return false;
+  // Published-only staff receive immutable published copies, never the live draft.
+  if(record.field==='schedule')return member.grants.some(g=>(g.capability==='*'||g.capability==='Scheduling.View')&&permits({...member,grants:[g]},'Scheduling.View',record.subject,directory));
+  return true;
+}
+export function staffGrants(employeeId:string,options:{boards?:'none'|'assigned'|'property';log?:boolean;schedule?:boolean}):Grant[]{
+  if(!employeeId)throw Error('Associate an employee before assigning staff access.');
+  const own:Scope={type:'employees',ids:[employeeId]},property:Scope={type:'property'};
+  const grants:Grant[]=[{capability:'Property.View',scope:property},{capability:'Employees.View',scope:own}];
+  if(options.schedule)grants.push({capability:'Scheduling.Published',scope:own});
+  if(options.boards&&options.boards!=='none')grants.push({capability:'Rooms.View',scope:property},{capability:'HousekeepingBoards.View',scope:options.boards==='property'?property:own});
+  if(options.log)for(const capability of ['ShiftLog.View','ShiftLog.Create','ShiftLog.Edit'])grants.push({capability,scope:property});
+  return grants;
+}
+export function validateDelegation(actor:Member,grants:Grant[],directory:Directory){
+  if(actor.grants.some(g=>g.capability==='*'&&g.scope.type==='property'))return;
+  for(const grant of grants){if(grant.capability==='*'||grant.capability==='Users.Manage'||grant.capability==='Property.Configure'||grant.capability.startsWith('Employees.Private')||grant.capability.startsWith('Discipline.'))throw Error('Only a full administrator can assign that authority.');
+    const cap=grant.capability==='Scheduling.Published'?'Scheduling.View':grant.capability;
+    if(grant.scope.type==='property'){if(!actor.grants.some(g=>(g.capability==='*'||g.capability===cap)&&g.scope.type==='property'))throw Error('You cannot grant access beyond your own authority.');}
+    else{if(!['employees','department','position'].includes(grant.scope.type))throw Error('A full administrator must assign management scopes.');for(const id of grant.scope.ids||[]){const subjects=grant.scope.type==='employees'?[id]:directory.employees.filter(e=>grant.scope.type==='position'?e.position===id:(e.departments||[e.department]).includes(id)).map(e=>e.id);if(!subjects.length||subjects.some(id=>!permits(actor,cap,id,directory)))throw Error('You cannot grant access beyond your own authority.');}}
+  }
+}
 // Editing may only remove authenticated publication weeks. Adding one still
 // requires Publish; ciphertext alone cannot establish a safe downgrade.
 export function permitsResourceWrite(member:Member,record:Pick<Resource,'field'|'subject'|'aadVersion'|'publicationWeeks'>,previous:Resource|undefined,directory:Directory){
@@ -35,7 +58,7 @@ export function permitsResourceWrite(member:Member,record:Pick<Resource,'field'|
 }
 export function profileGrants(profile:string,scope:Scope={type:'property'}):Grant[]{
   const operational=['Property.View','Employees.View','Rooms.View','ShiftLog.View','ShiftLog.Edit','ShiftLog.Create','ShiftLog.ViewArchive','ShiftLog.Handoff','RoomChecks.View','RoomChecks.Perform'];
-  const manager=['Scheduling.View','Scheduling.Edit','Scheduling.Publish','Availability.View','HousekeepingBoards.View','HousekeepingBoards.Assign','Training.View','Training.Edit','OperationalData.Export'];
+  const manager=['Users.Manage','Scheduling.View','Scheduling.Edit','Scheduling.Publish','Availability.View','HousekeepingBoards.View','HousekeepingBoards.Assign','Training.View','Training.Edit','OperationalData.Export'];
   const capabilities=profile==='Administrator'?['*']:profile==='Manager'?[...operational,...manager]:profile==='Supervisor'?[...operational,'Scheduling.View','HousekeepingBoards.View','HousekeepingBoards.Assign'] : operational;
   return capabilities.map(capability=>({capability,scope:['Property.View','Rooms.View','ShiftLog.View','ShiftLog.Edit','ShiftLog.Create','ShiftLog.ViewArchive','ShiftLog.Handoff','RoomChecks.View','RoomChecks.Perform'].includes(capability)?{type:'property'}:scope}));
 }

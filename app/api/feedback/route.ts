@@ -1,7 +1,7 @@
 import { env } from 'cloudflare:workers';
 import {APP_VERSION} from '../../version';
 import { createPrivateKey, sign } from 'node:crypto';
-import { getChatGPTUser } from '../../chatgpt-auth';
+import { getAccountUser,accountMemberships } from '../../account-server';
 import { body, rate, response } from '../../team-server';
 
 type Secrets = { GITHUB_APP_CLIENT_ID?: string; GITHUB_APP_PRIVATE_KEY?: string; GITHUB_INSTALLATION_ID?: string; GITHUB_FEEDBACK_REPOSITORY?: string };
@@ -17,9 +17,10 @@ const labels: Record<string, { name: string; color: string; description: string 
 };
 export async function GET() { return response({ configured: configured() }); }
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getAccountUser(request);
   if (!user) return response({ error: 'Sign in before submitting feedback.' }, 401);
   if (request.headers.get('origin') !== new URL(request.url).origin) return response({ error: 'Invalid origin.' }, 403);
+  if(!(await accountMemberships(user.userId)).some(m=>m.status==='active'&&m.grants.length&&(user.provider!=='password'||m.employeeId)))return response({error:'Property approval and role assignment are required before submitting feedback.'},403);
   if (!configured()) return response({ error: 'GitHub App setup is required. Your draft is preserved.' }, 503);
   try { await rate(user.userId, 'feedback', 20); } catch (error) { if (error instanceof Response) return error; throw error; }
   let data;

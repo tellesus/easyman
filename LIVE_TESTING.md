@@ -1,5 +1,14 @@
 # EasyMan — hosted testing on easyman.app
 
+## October 20, 2026 — independent staff accounts
+
+The account extension uses real email/password authentication and encrypted identity envelopes, alongside existing ChatGPT sign-in. Local tests use disposable fictional accounts and an isolated `LOCAL-ACCOUNT-TEST` property, with no hosted employee association or real people enrolled. Browser checks confirmed signup → recovery-code screen → zero-access waiting, sign-out/sign-in after local key removal, approved board visibility, own published shifts, and a shift-log update surviving reload. A deliberately inconsistent local fixture initially blocked that update; correcting its boundary metadata made the normal scoped save succeed. The automated regression now exercises the same client save path through actual encrypted API routes.
+
+Security checks cover default-deny signup, denied administrator bootstrap, explicit employee approval, current/history key provisioning, draft/personnel/other-employee denial, bounded manager delegation, disabled membership, salted password storage, new-browser key unlock, password changes/recovery, recovery-code rotation and revoked-session replay. A fresh password login clears stale property-session cookies; password changes revoke prior sessions. The scrypt implementation and timing-safe comparison also execute in an actual local Workers runtime. Credential forms use POST and stay disabled before hydration. The public demo bundle explicitly excludes all account/authentication code.
+
+All **127 automated tests** pass. TypeScript, the normal deployment build and standalone static-demo build pass. Main version 28 (`d0cf9dafd93ae12bf5ff583e0b331cd18f4a21fb`) deployed successfully as `appgdep_6ad83d32beb881918abe8865c20f6e84` at 2026-10-21 04:19:10 UTC (October 20 in America/Chicago), preserving MCP and environment revision 3. Static demo version 4 deployed as `appgdep_6ad83d3c8b38819197e41809cd68adb6`, with no MCP/environment secrets. The canonical hosted login page renders registration and existing ChatGPT entry. A fresh synthetic account successfully registered and signed in through the deployed password service, had zero memberships, saw the waiting screen, and was denied property reads and feedback submission; incorrect-password and logged-out-token replay were denied. It was never associated with a hosted employee. No property records were mutated. The demo served `/assets/demo-WBC3AU53.js`, with `probe:false` and no live account/authentication inputs. No real multi-user or physical-device testing is claimed; no external feedback is submitted by this test run. See [ACCOUNTS_GUIDE.md](ACCOUNTS_GUIDE.md).
+
+
 October 11 scheduling extension: local fictional-data walkthrough verified staffing grids, independent defaults/weeks, automatic gaps, Manager/defer/resume, publication history, XLSX download, overnight checkbox and narrow layout. Demo probes observed zero operational network/storage attempts. Real encrypted API regression verifies persisted staffing/Manager/preference fields and access denial; hosted workspace examples are not reset. Final deployment smoke checks are recorded separately below.
 
 The main code deployment `appgdep_6acc0192d5c081918734cb10f342c608` succeeded at **2026-10-11 21:37:34 UTC**, retaining MCP capability and environment revision 3. The static demo deployment `appgdep_6acc015f6d5c8191b6218afc498f20ae` succeeded at **21:36:39 UTC**, with no MCP and environment revision 0. At https://demo.easyman.app/ the published grid accepts changed overnight demand; Generate draft automatically opens the remaining gap, deliberate Manager coverage resolves it and the schedule returns to 100% coverage. The served manifest has `probe:false`, entry `/assets/demo-3O2ZUNM6.js`, and no live account/storage modules. The website retains its demo link and registered entry https://easyman.app/app. TypeScript, all **121 tests**, the normal deployment build and standalone demo build pass. Main bundle-size/static-classification warnings remain the existing nonblocking build warnings. No real multi-user or physical-phone test is claimed; no hosted employee preferences/records were changed during this smoke check.
@@ -15,11 +24,11 @@ This file preserves dated observations. It does not claim those tests were repea
 - Canonical hosted testing address: [easyman.app](https://easyman.app/).
 - Original managed address: [easyman-hotel-ops.michaelleza.chatgpt.site](https://easyman-hotel-ops.michaelleza.chatgpt.site/).
 - Both addresses connect to the same Sites project, deployment and property database. They are not isolated test environments; edits through either affect the same example records.
-- Site access remains private to the existing allowed account. Another tester would need both private Site access and EasyMan property invitation/approval. A custom domain grants neither.
-- Account keys and sessions are browser/origin-specific. Signing in does not itself transfer a decryption key; first use in another browser/origin may require the account recovery file.
+- Current hosting audience is public for the brochure and login page. Property records still require authenticated, approved membership and assigned capabilities. The earlier private-Site observations below describe the October 9 setup.
+- Sessions and locally unlocked keys are browser/origin-specific. Password sign-in unlocks the synchronized encrypted identity envelope; ChatGPT sign-in may require the account recovery file on another browser/origin.
 - `www.easyman.app` was not configured in the recorded setup.
 
-## First sign-in or another browser
+## ChatGPT key recovery in another browser
 
 1. For a recovery test, keep the working browser available. In Account options, download the account recovery file using a passphrase of at least 12 characters; keep the passphrase separately.
 2. If the current example state matters to the test, retain an encrypted working copy and configuration backup. These serve different purposes from account recovery.
@@ -137,3 +146,7 @@ The owner requested a public product introduction. The homepage now serves the b
 ## Demo isolation update
 
 The demo is a separate public static Site/origin at https://demo.easyman.app, with no database bindings, environment variables, MCP or accounts. Website links distinguish demo and sign-in. Local browser tests with storage/network APIs instrumented to throw exercised generation/publication, XLSX download, kept housekeeping assignments/cleaning/rebalance, valid and ambiguous PMS imports, pass-on completion/frozen examples, editable configuration, reset and refresh. After removing a dependency’s browser warning-preference lookup, spreadsheet export records zero storage/network API attempts. These checks use fictional data; no real property records or keys are copied into the demo. See DEMO.md for current deployment and evidence limits.
+
+
+
+

@@ -24,6 +24,7 @@ export async function buildDemo({root=process.cwd(),outdir=path.resolve('.sites-
     b.onResolve({filter:/^\.\/team-panel$/},a=>({path:path.join(root,'demo/team-disabled.tsx')}));
     b.onResolve({filter:/^\.\/team-crypto$/},a=>a.importer===path.join(root,'app/workspace.tsx')?{path:path.join(root,'demo/live-disabled.ts')}:null);
     b.onResolve({filter:/^\.\/vault$/},a=>({path:path.join(root,'demo/demo-vault.ts')}));
+    b.onResolve({filter:/^\.\/account-controls$/},a=>({path:path.join(root,'demo/account-disabled.tsx')}));
     b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>{throw Error('Server dependency in static demo: '+a.path);});
     b.onLoad({filter:/app[\\/]globals\.css$/},a=>({contents:fs.readFileSync(a.path,'utf8').replace('@import "tailwindcss";',''),loader:'css'}));
     b.onLoad({filter:/node_modules[\\/]exceljs[\\/]dist[\\/]exceljs\.min\.js$/},a=>{
@@ -38,7 +39,7 @@ export async function buildDemo({root=process.cwd(),outdir=path.resolve('.sites-
   const outputs=Object.entries(result.metafile.outputs),entry=outputs.find(([,meta])=>meta.entryPoint?.replaceAll('\\','/')==='demo/entry.tsx');
   if(!entry)throw Error('Missing demo entry output');
   for(const [file] of outputs)if(file.endsWith('.js')&&/\b(localStorage|sessionStorage|indexedDB)\b/.test(fs.readFileSync(path.resolve(root,file),'utf8')))throw Error('Persistent browser storage reference in demo output: '+file);
-  for(const input of Object.keys(result.metafile.inputs))if(/app\/(vault|team-client|team-panel|team-server|chatgpt-auth)\.(ts|tsx)$/.test(input.replaceAll('\\','/'))||/app\/api\//.test(input))throw Error('Live module in demo bundle: '+input);
+  for(const input of Object.keys(result.metafile.inputs))if(/app\/(vault|team-client|team-panel|team-server|chatgpt-auth|account-server|account-controls|password-crypto|login-ui|staff-workspace|staff-feedback)\.(ts|tsx)$/.test(input.replaceAll('\\','/'))||/app\/api\//.test(input))throw Error('Live module in demo bundle: '+input);
   const asset=file=>'/'+path.relative(outdir,path.resolve(root,file)).replaceAll('\\','/');
   const js=asset(entry[0]),css=entry[1].cssBundle?asset(entry[1].cssBundle):null;
   fs.mkdirSync(outdir,{recursive:true});
@@ -52,3 +53,4 @@ export async function buildDemo({root=process.cwd(),outdir=path.resolve('.sites-
   return {entry:js,inputs:Object.keys(result.metafile.inputs).length,outputs:outputs.length,probe};
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1]))console.log(JSON.stringify(await buildDemo({outdir:process.argv[2]?path.resolve(process.argv[2]):undefined,probe:process.argv.includes('--probe')})));
+

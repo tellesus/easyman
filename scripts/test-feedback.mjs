@@ -14,6 +14,7 @@ class Statement {
   constructor(query, params = []) { this.query = query; this.params = params; }
   bind(...params) { return new Statement(this.query, params); }
   async first() { return sql.prepare(this.query).get(...this.params) || null; }
+  async all() { return {results:sql.prepare(this.query).all(...this.params)}; }
   async run() { return { meta: { changes: Number(sql.prepare(this.query).run(...this.params).changes) } }; }
 }
 globalThis.__feedbackEnv = { DB: { prepare: q => new Statement(q) } };
@@ -27,7 +28,7 @@ await build({ entryPoints: ['app/api/feedback/route.ts'], outfile: file, bundle:
 const route = await import(pathToFileURL(file));
 const pair = generateKeyPairSync('rsa', { modulusLength: 2048 });
 function reset() {
-  sql.exec('DELETE FROM feedback_submissions; DELETE FROM rate_limits;');
+  sql.exec("DELETE FROM feedback_submissions; DELETE FROM rate_limits; DELETE FROM members; INSERT INTO members (id,property,user_id,email,employee_id,status,grants,created_at) VALUES ('owner-test','owner','owner','owner@example.invalid','','active','[{\"capability\":\"*\",\"scope\":{\"type\":\"property\"}}]','2026-10-20T00:00:00Z');");
   Object.assign(globalThis.__feedbackEnv, { GITHUB_APP_CLIENT_ID: 'Iv1.example', GITHUB_APP_PRIVATE_KEY: pair.privateKey.export({ type: 'pkcs8', format: 'pem' }), GITHUB_INSTALLATION_ID: '123', GITHUB_FEEDBACK_REPOSITORY: 'tellesus/easyman-feedback' });
 }
 const draft = (category = 'Pain Point') => ({ id: crypto.randomUUID(), category, subject: '  Synthetic test  ', description: '  Only a reviewed synthetic description.  ', hotelRecords: [{ confidential: 'MUST NOT BE COPIED' }], email: 'MUST NOT BE COPIED' });
@@ -66,6 +67,7 @@ function github({ privateRepo = true, issues = true, archived = false, missingLa
 test('feedback rejects unauthenticated, cross-origin, unconfigured, invalid and oversized requests', async () => {
   reset(); const requests = github();
   assert.equal((await call(draft(), { actor: null })).status, 401);
+  assert.equal((await call(draft(), { actor: 'unapproved' })).status, 403);
   assert.equal((await call(draft(), { origin: 'https://attacker.invalid' })).status, 403);
   delete globalThis.__feedbackEnv.GITHUB_APP_PRIVATE_KEY;
   assert.deepEqual(await (await route.GET()).json(), { configured: false });

@@ -1,5 +1,7 @@
 # EasyMan
 
+Independent staff accounts: open **https://easyman.app/login** to create an email/password login without ChatGPT. New accounts wait with no property access. In **Team & sessions**, an authorized manager adds the person's request code or invitation, associates an employee, and explicitly grants board/log/own published-schedule access. Existing owner ChatGPT sign-in remains available. Passwords have no mandatory periodic reset; sign-in on another browser unlocks the same encrypted account key. See [ACCOUNTS_GUIDE.md](ACCOUNTS_GUIDE.md) for approval, voluntary changes and recovery-code instructions. Earlier key-file-only guidance below applies to ChatGPT identities.
+
 Scheduling now supports daily staffing defaults and independent weekly requirements, explicit overnight eligibility, guided missing-shift decisions including general Manager coverage, and combined manual warnings. See [SCHEDULING_GUIDE.md](SCHEDULING_GUIDE.md) for the workflow. Earlier test counts below describe their historical batches.
 
 **Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
@@ -33,7 +35,7 @@ npm run install:ci
 npm run dev
 ```
 
-Open the printed local URL. The local preview uses the starter's mock sign-in identity. Hosted sign-in is provided by Sites; mock authentication is not evidence of the hosted identity flow.
+Open the printed local URL. The local preview uses the starter's mock sign-in identity. Hosted sign-in supports independent EasyMan email/password accounts and the existing Sites ChatGPT provider; mock authentication is not evidence of either hosted identity flow.
 
 ```sh
 npm test
@@ -96,3 +98,4 @@ The public-website update passes **101/101 tests** and TypeScript checks; the ea
 ## Interactive demo
 
 The independent demo is at **https://demo.easyman.app/**; registered-user sign-in remains **https://easyman.app/app**. The demo uses the shared workspace with an explicit in-memory runtime, static hosting and no database, credentials, authentication or persistent browser storage. Reset/refresh starts fresh examples. Cloud-dependent account actions are explained as unavailable, feedback is a local preview, and snapshots are labeled fictional. Real spreadsheet exports and supplied PMS-report/JSON examples work locally. See [DEMO.md](DEMO.md). The updated complete suite passes **107/107 tests** and TypeScript checks. Earlier 99/101 counts describe earlier batches.
+

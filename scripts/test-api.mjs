@@ -8,7 +8,9 @@ import path from 'node:path';
 import { registerHooks } from 'node:module';
 import { build } from 'esbuild';
 registerHooks({resolve(specifier,context,next){return next(specifier.startsWith('./')&&!/\.(ts|js|mjs)$/.test(specifier)&&context.parentURL?.includes('/app/')?specifier+'.ts':specifier,context);}});
-const {newIdentity,seal,openResource,emptyState,resources,directory,decode}=await import('../app/team-crypto.ts');
+const {newIdentity,seal,rewrap,openResource,emptyState,resources,directory,decode}=await import('../app/team-crypto.ts');
+const {lockLoginKey,unlockLoginKey,randomToken,passwordDigest,validPassword}=await import('../app/password-crypto.ts');
+const {staffGrants}=await import('../app/access.ts');
 const {seed,today}=await import('../app/domain.ts');
 const {applyDaySetup,housekeepingDay,updateDayTask}=await import('../app/housekeeping.ts');
 const {restoreWorkingCopy}=await import('../app/working-copy.ts');
@@ -22,7 +24,7 @@ class Statement{constructor(query,params=[]){this.query=query;this.params=params
 globalThis.__easymanHeaders=new AsyncLocalStorage();
 globalThis.__easymanDb={prepare:q=>new Statement(q),batch:async statements=>{sql.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.run());sql.exec('COMMIT');return results;}catch(e){sql.exec('ROLLBACK');throw e;}}};
 const out=path.resolve('.sites-runtime/api-tests');mkdirSync(out,{recursive:true});
-const names=['team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','workspace','audit','sessions','feedback','mcp'];const routes={};
+const names=['account','team-workspace','team','keys','recovery','session-reset','snapshots','snapshot-status','workspace','audit','sessions','feedback','mcp'];const routes={};
 for(const name of names){const file=path.join(out,name+'.mjs');await build({entryPoints:[name==='mcp'?'app/mcp/route.ts':'app/api/'+name+'/route.ts'],outfile:file,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-platform-boundary',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return globalThis.__easymanHeaders.getStore()||new Headers();}':'export function redirect(){throw new Error("Redirect in API test");}'}));}}]});routes[name]=await import(pathToFileURL(file));}
 const snapshotFile=path.join(out,'snapshot-service.mjs');await build({entryPoints:['app/snapshot-server.ts'],outfile:snapshotFile,bundle:true,format:'esm',platform:'node',logLevel:'silent',plugins:[{name:'test-snapshot-platform',setup(b){b.onResolve({filter:/^(cloudflare:workers|next\/headers|next\/navigation)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({contents:a.path==='cloudflare:workers'?'export const env={DB:globalThis.__easymanDb};':a.path==='next/headers'?'export async function headers(){return new Headers();}':'export function redirect(){}'}));}}]});const {captureDueSnapshots,propertySnapshotStatus}=await import(pathToFileURL(snapshotFile));
 const cookies=new Map();
@@ -39,7 +41,7 @@ test('new weekly needs and manager coverage persist through real encrypted API; 
 });
 test('completed scheduling and inspection fields persist encrypted through actual storage and survive readback',async()=>{
   const actor='finish-workflows',identity=await newIdentity(),state=seed();state.schedule=[{id:'adjusted',employee:'e2',position:'agent',date:'2026-10-12',shift:'am',start:'08:00',end:'16:00',hours:7.5,override:{warnings:['TEST warning'],reason:'TEST explicit override',at:'2026-10-10T20:00:00Z'}}];state.checks=[{id:'inspected',room:'007',inspector:'e11',attendant:'e8',failureCategory:'Bathroom',result:'Fail',notes:'TEST inspection',date:'2026-10-10T20:00:00Z',status:'Recheck required'}];state.discipline=[{id:'discipline',employee:'e2',subject:'TEST fiction',acknowledgment:'Declined',history:[{at:'2026-10-10T20:00:00Z',text:'TEST previous version',snapshot:{acknowledgment:'Acknowledged'}}]}];state.passon=[{id:'frozen-details',owner:'e2',ownerName:'TEST Frozen Owner',subject:'TEST handover',status:'Open',priority:'Urgent',escalation:'Manager review',history:[{at:'2026-10-10T20:00:00Z',by:'TEST manager',text:'TEST frozen operational note'}]}];
-  await call(actor,'team-workspace');await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey});await call(actor,'team-workspace','POST',{action:'create',directory:directory(state),timezone:'America/Chicago',boundaries:[]});const context=(await call(actor,'team-workspace')).value,encrypted=[];
+  await call(actor,'team-workspace');await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey});await bootstrapProperty(actor,{directory:directory(state),timezone:'America/Chicago',boundaries:[]});const context=(await call(actor,'team-workspace')).value,encrypted=[];
   for(const p of resources(state,actor))encrypted.push(await seal(p.value,identity,context.members,{id:p.id,field:p.field,subject:p.subject,revision:0,propertyId:actor},directory(state)));
   assert.ok(!JSON.stringify(encrypted).includes('TEST Frozen Owner'));assert.equal((await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records:encrypted,deleted:[],directory:directory(state)})).status,200);
   const loaded=await decode((await call(actor,'team-workspace')).value.resources,identity,actor);assert.deepEqual(loaded.schedule,state.schedule);assert.deepEqual(loaded.checks,state.checks);assert.deepEqual(loaded.discipline,state.discipline);assert.deepEqual(loaded.passon,state.passon);
@@ -47,7 +49,7 @@ test('completed scheduling and inspection fields persist encrypted through actua
 test('API persists pass-on expiry and unchanged legacy records upgrade without changing completion time',async()=>{
   const actor='cutoff-api',identity=await newIdentity(),dir={employees:[],reporting:[]};
   await call(actor,'team-workspace');await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey});
-  await call(actor,'team-workspace','POST',{action:'create',directory:dir,timezone:'America/Chicago',boundaries:['07:00']});
+  await bootstrapProperty(actor,{directory:dir,timezone:'America/Chicago',boundaries:['07:00']});
   const context=(await call(actor,'team-workspace')).value;
   const value={id:'one',subject:'SYNTHETIC completed',status:'Completed',completed:'2026-10-10T00:00:00.000Z',history:[]};
   const record=await seal(value,identity,context.members,{id:'passon:one',propertyId:actor,field:'passon',subject:'',revision:0},dir);
@@ -66,13 +68,13 @@ test('API persists pass-on expiry and unchanged legacy records upgrade without c
   const historical=JSON.parse(sql.prepare('SELECT data FROM resource_versions WHERE property=? AND resource_id=? ORDER BY timestamp DESC LIMIT 1').get(actor,actor+'::passon:one').data);assert.equal(historical.aadVersion,1);assert.deepEqual(await openResource(historical,identity,actor),value);
 });
 async function call(actor,route,method='GET',data,query=''){
-  const headers=new Headers({'Origin':'https://easyman.test','Content-Type':'application/json'});
+  const headers=new Headers({'Origin':'https://easyman.test','Content-Type':'application/json','cf-connecting-ip':actor||'anonymous-test'});
   if(cookies.has(actor))headers.set('Cookie',cookies.get(actor));
-  const auth=new Headers();if(actor){auth.set('oai-authenticated-user-id',actor);auth.set('oai-authenticated-user-email',actor+'@example.invalid');}
+  const auth=new Headers(headers);if(actor&&!actor.startsWith('browser:')){auth.set('oai-authenticated-user-id',actor);auth.set('oai-authenticated-user-email',actor+'@example.invalid');}
   const request=new Request('https://easyman.test/api/'+route+query,{method,headers,...(data===undefined?{}:{body:JSON.stringify(data)})});
   const response=await globalThis.__easymanHeaders.run(auth,()=>routes[route][method](request));
-  const cookie=response.headers.get('set-cookie');if(cookie){const name=cookie.split('=')[0];const prior=(cookies.get(actor)||'').split('; ').filter(c=>c&&!c.startsWith(name+'='));cookies.set(actor,[...prior,cookie.split(';')[0]].join('; '));}
-  const value=await response.json();return {status:response.status,value};
+  for(const cookie of response.headers.getSetCookie()){const name=cookie.split('=')[0];const prior=(cookies.get(actor)||'').split('; ').filter(c=>c&&!c.startsWith(name+'='));cookies.set(actor,[...prior,...(/Max-Age=0(?:;|$)/.test(cookie)?[]:[cookie.split(';')[0]])].join('; '));}
+  const value=await response.json();return {status:response.status,value,headers:response.headers};
 }
 
 async function editingFixture(prefix){
@@ -80,7 +82,7 @@ async function editingFixture(prefix){
   for(const [actor,key] of [[owner,identity],[editor,editorIdentity]]){await call(actor,'team-workspace');assert.equal((await call(actor,'team-workspace','POST',{action:'identity',publicKey:key.publicKey})).status,200);}
   const state=emptyState();state.config.sample=false;state.employees=seed().employees.slice(0,2);state.reporting=[{id:'reporting-one',employee:'e2',targetType:'employee',target:'e1'}];state.availability=[{id:'restricted',employee:'e2',from:'2026-10-05',to:'2026-10-12',shift:'pm'}];state.schedule=[{id:'shift',employee:'e1',date:'2026-10-05',position:'agent',shift:'am'}];state.publications=[{id:'e1',employee:'e1',publishedWeeks:['2026-10-05','2026-10-12']},{id:'e2',employee:'e2',publishedWeeks:[]}];
   state.snapshots=[{id:'published-copy',employee:'e1',type:'schedule',week:'2026-10-05',items:structuredClone(state.schedule),shifts:state.config.shifts,at:'2026-10-04T18:00:00.000Z'}];
-  const dir=directory(state);assert.equal((await call(owner,'team-workspace','POST',{action:'create',directory:dir,timezone:state.config.timezone,boundaries:state.config.boundaries})).status,200);
+  const dir=directory(state);assert.equal((await bootstrapProperty(owner,{directory:dir,timezone:state.config.timezone,boundaries:state.config.boundaries})).status,200);
   const grants=['Property.View','Employees.View','Rooms.View','Scheduling.View','Scheduling.Edit','Availability.View','Employees.Manage'].map(capability=>({capability,scope:{type:'property'}}));
   sql.prepare("INSERT INTO members (id,property,user_id,email,employee_id,status,grants,created_at) VALUES (?,?,?,?,?,'active',?,?)").run(owner+'::'+editor,owner,editor,editor+'@example.invalid','e2',JSON.stringify(grants),new Date().toISOString());
   let context=(await call(owner,'team-workspace')).value;const records=[];for(const item of resources(state,owner))records.push(await seal(item.value,identity,context.members,{...item,propertyId:owner,revision:0},dir));
@@ -147,7 +149,7 @@ test('actual API routes enforce scope, key recipients, CSRF, concurrency, sessio
   const owner=await newIdentity(),reader=await newIdentity();
   for(const [actor,identity] of [['owner',owner],['reader',reader]]){assert.equal((await call(actor,'team-workspace')).status,200);assert.equal((await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);}
   const directory={employees:[{id:'e1',department:'fo',position:'agent',active:true},{id:'e2',department:'hk',position:'attendant',active:true}],reporting:[]};
-  assert.equal((await call('owner','team-workspace','POST',{action:'create',directory,timezone:'America/Chicago',boundaries:['07:00','15:00','23:00']})).status,200);
+  assert.equal((await bootstrapProperty('owner',{directory,timezone:'America/Chicago',boundaries:['07:00','15:00','23:00']})).status,200);
   assert.equal((await call('reader','team-workspace','GET',undefined,'?property=owner')).status,403);
   const invitation=await call('owner','team','POST',{action:'invite',propertyId:'owner',email:'reader@example.invalid'});assert.equal(invitation.status,200);
   const token=new URL(invitation.value.inviteUrl).searchParams.get('join');
@@ -223,7 +225,7 @@ test('daily housekeeping plans and dated tasks persist through the real API with
   const owner=await newIdentity(),scoped=await newIdentity(),actor='hk-owner',reader='hk-scoped';
   for(const [id,identity] of [[actor,owner],[reader,scoped]]){await call(id,'team-workspace');assert.equal((await call(id,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);}
   const directory={employees:[{id:'attendant',department:'hk',position:'attendant',active:true}],reporting:[]};
-  assert.equal((await call(actor,'team-workspace','POST',{action:'create',directory,timezone:'America/Chicago',boundaries:[]})).status,200);
+  assert.equal((await bootstrapProperty(actor,{directory,timezone:'America/Chicago',boundaries:[]})).status,200);
   const invite=await call(actor,'team','POST',{action:'invite',propertyId:actor,email:reader+'@example.invalid'}),token=new URL(invite.value.inviteUrl).searchParams.get('join');
   await call(reader,'team','POST',{action:'join',token});
   await call(actor,'team','POST',{action:'approve',propertyId:actor,userId:reader,employeeId:'attendant',grants:[{capability:'HousekeepingBoards.View',scope:{type:'employees',ids:['attendant']}},{capability:'HousekeepingBoards.Assign',scope:{type:'employees',ids:['attendant']}}]});
@@ -238,7 +240,7 @@ test('daily housekeeping plans and dated tasks persist through the real API with
 test('release recovery restores an encrypted backup into an empty isolated property through actual storage routes',async()=>{
   const actor='release-recovery-owner',identity=await newIdentity(),empty=emptyState();empty.config.name='TEST empty recovery property';empty.config.sample=false;
   await call(actor,'team-workspace');assert.equal((await call(actor,'team-workspace','POST',{action:'identity',publicKey:identity.publicKey})).status,200);
-  assert.equal((await call(actor,'team-workspace','POST',{action:'create',directory:directory(empty),timezone:empty.config.timezone,boundaries:empty.config.boundaries})).status,200);
+  assert.equal((await bootstrapProperty(actor,{directory:directory(empty),timezone:empty.config.timezone,boundaries:empty.config.boundaries})).status,200);
   async function saveState(state){const context=(await call(actor,'team-workspace')).value,records=[];for(const item of resources(state,actor))records.push(await seal(item.value,identity,context.members,{id:item.id,field:item.field,subject:item.subject,propertyId:actor,revision:0},directory(state)));const result=await call(actor,'team-workspace','PUT',{propertyId:actor,revision:context.revision,records,deleted:[],directory:directory(state)});assert.equal(result.status,200,JSON.stringify(result.value));}
   await saveState(empty);const reopenedEmpty=await decode((await call(actor,'team-workspace')).value.resources,identity,actor);assert.equal(reopenedEmpty.rooms.length,0);assert.equal(reopenedEmpty.sample,false);
   const source=seed(),day=today(source.config.timezone);source.config.name='TEST restored property';let backup=applyDaySetup(source,day,[{roomNumber:'201',service:'departure'},{roomNumber:'202',service:'stayover'}],true,['e8','e9']);backup=updateDayTask(backup,day,'r0',{status:'Clean',locked:true});
@@ -258,3 +260,65 @@ test('public website access does not permit anonymous operational API reads or w
     }
   }
 });
+
+async function bootstrapProperty(actor,data){
+ // Explicit isolated-fixture provisioning. Public self-registration cannot do this.
+ sql.prepare('INSERT OR IGNORE INTO properties (id,owner,directory,timezone,boundaries,revision,key_epoch,created_at) VALUES (?,?,?,?,?,0,0,?)').run(actor,actor,JSON.stringify(data.directory),data.timezone||'America/Chicago',JSON.stringify(data.boundaries||[]),new Date().toISOString());
+ sql.prepare("INSERT OR IGNORE INTO members (id,property,user_id,email,employee_id,status,grants,created_at) VALUES (?,?,?,?,?,'active',?,?)").run(actor+'::'+actor,actor,actor,actor+'@example.invalid','',JSON.stringify([{capability:'*',scope:{type:'property'}}]),new Date().toISOString());
+ return call(actor,'team-workspace','POST',{action:'create',...data});
+}
+
+async function registeredBrowser(name){
+ const actor='browser:'+name,email=name+'@example.invalid',password='TEST only fictional staff passphrase 2026!',code=randomToken(),identity=await newIdentity();const data={action:'signup',email,password,name:'TEST '+name,publicKey:identity.publicKey,passwordVault:await lockLoginKey(identity,password),recoveryCode:code,recoveryVault:await lockLoginKey(identity,code)};const response=await call(actor,'account','POST',data);assert.equal(response.status,201,JSON.stringify(response.value));return {actor,email,password,code,identity,id:response.value.userId,response};
+}
+test('independent signup starts with zero memberships and no bootstrap or property reads; cookies and stored verifiers are protected',async()=>{
+ const registered=await registeredBrowser('pending-native');const profile=await call(registered.actor,'account');assert.equal(profile.status,200);assert.deepEqual(profile.value.memberships,[]);assert.match(profile.value.requestCode,/^EM-/);assert.equal((await call(registered.actor,'feedback','POST',{})).status,403);assert.match(registered.response.headers.get('set-cookie'),/HttpOnly; SameSite=Lax/);assert.match(registered.response.headers.get('set-cookie'),/; Secure/);
+ const row=sql.prepare('SELECT * FROM auth_accounts WHERE id=?').get(registered.id);assert.notEqual(row.password_hash,registered.password);assert.ok(!row.password_vault.includes(registered.password));assert.notEqual(row.recovery_hash,registered.code);assert.equal(row.credential_version,1);
+ assert.equal((await call(registered.actor,'team-workspace','POST',{action:'create',directory:{employees:[],reporting:[]}})).status,403);assert.equal((await call(registered.actor,'workspace')).status,403);assert.equal((await call(registered.actor,'team-workspace')).status,403);
+ assert.equal((await call('new-unapproved-chatgpt','team-workspace','POST',{action:'create',directory:{employees:[],reporting:[]}})).status,403);
+ const bad=await call('browser:wrong-password','account','POST',{action:'login',email:registered.email,password:'TEST wrong fictional password'});assert.equal(bad.status,401);const missing=await call('browser:wrong-password','account','POST',{action:'login',email:'not-registered@example.invalid',password:registered.password});assert.deepEqual(bad.value,missing.value);
+ for(const value of ['short','123456789012345','a'.repeat(130)])assert.throws(()=>validPassword(value));
+ assert.equal(validPassword('Long passwords may contain spaces!'),'Long passwords may contain spaces!');
+ const a=await passwordDigest('TEST equal password','first salt'),b=await passwordDigest('TEST equal password','second salt');assert.notEqual(a,b);
+});
+test('approved native staff receive linked boards/log and their own published copies, never live drafts, personnel, management or other employee schedules',async()=>{
+ const f=await editingFixture('native-staff'),r=await registeredBrowser('approved-native');
+ const code=(await call(r.actor,'account')).value.requestCode;assert.equal((await call(f.owner,'team','POST',{action:'add-account',propertyId:f.owner,requestCode:code})).status,200);
+ assert.equal((await call(r.actor,'team-workspace','GET',undefined,'?property='+f.owner)).status,403);
+ const grants=staffGrants('e1',{boards:'assigned',log:true,schedule:true});
+ assert.equal((await call(f.owner,'team','POST',{action:'approve',propertyId:f.owner,userId:r.id,employeeId:'',grants})).status,400);
+ assert.equal((await call(f.owner,'team','POST',{action:'approve',propertyId:f.owner,userId:r.id,employeeId:'e1',grants})).status,200);
+ // Save a draft and published copies using real encryption and actual routes.
+ const state=f.state;state.schedule.push({id:'other-draft',employee:'e2',date:state.week,shift:'pm',position:'agent'});state.passon=[{id:'front-log',subject:'TEST front log',description:'Fictional handover',status:'Open',history:[]}];state.boards=[{id:'staff-task',date:today(),room:'r0',employee:'e1',status:'To clean',service:'departure',active:true}];state.snapshots.push({id:'native-own-publication',employee:'e1',type:'schedule',week:state.week,at:new Date().toISOString(),items:[state.schedule[0]],shifts:state.config.shifts},{id:'native-other-publication',employee:'e2',type:'schedule',week:state.week,at:new Date().toISOString(),items:[state.schedule[1]],shifts:state.config.shifts});
+ let owner=(await call(f.owner,'team-workspace')).value;const encrypted=[];for(const item of resources(state,f.owner)){if(owner.resources.some(old=>old.id===item.id)&&['scheduleArchives','snapshots'].includes(item.field))continue;encrypted.push(await seal(item.value,f.identity,owner.members,{id:item.id,field:item.field,subject:item.subject,propertyId:f.owner,revision:0},f.dir));}
+ assert.equal((await call(f.owner,'team-workspace','PUT',{propertyId:f.owner,revision:owner.revision,records:encrypted,deleted:[]})).status,200);
+ // Exercise the same provisioning path used by the approval UI, including history.
+ owner=(await call(f.owner,'team-workspace')).value;const stored=(await call(f.owner,'keys','GET',undefined,'?property='+f.owner)).value,rewrapped=[];for(const record of stored)rewrapped.push(await rewrap(record,f.identity,owner.members,f.owner,f.dir));assert.equal((await call(f.owner,'keys','POST',{propertyId:f.owner,records:rewrapped})).status,200);
+ const read=await call(r.actor,'team-workspace','GET',undefined,'?property='+f.owner);assert.equal(read.status,200,JSON.stringify(read.value));const fields=read.value.resources.map(x=>x.field);assert.ok(fields.includes('boards'));assert.ok(fields.includes('passon'));assert.ok(fields.includes('scheduleArchives'));for(const denied of ['schedule','availability','preferences','training','discipline','employeePrivate','staffingWeeks'])assert.ok(!fields.includes(denied),denied);
+ assert.ok(read.value.resources.filter(x=>x.field==='scheduleArchives').every(x=>x.subject==='e1'));const opened=await decode(read.value.resources,r.identity,r.id);assert.equal(opened.schedule.length,0);assert.ok(opened.snapshots.some(x=>x.id==='native-own-publication'));assert.ok(!opened.snapshots.some(x=>x.id==='native-other-publication'));
+ assert.equal((await call(r.actor,'team','GET',undefined,'?property='+f.owner)).status,403);assert.equal((await call(r.actor,'keys','GET',undefined,'?property='+f.owner)).status,403);
+ const clientFile=path.join(out,'native-team-client.mjs');await build({entryPoints:['app/team-client.ts'],outfile:clientFile,bundle:true,format:'esm',platform:'node',logLevel:'silent'});const {saveTeam}=await import(pathToFileURL(clientFile));
+ const known=new Map();for(const item of resources(opened,r.id)){const resource=read.value.resources.find(x=>x.id===item.id);if(resource)known.set(item.id,{resource,value:JSON.stringify(item.value)});}
+ const staffContext={propertyId:f.owner,revision:read.value.revision,keyEpoch:read.value.keyEpoch,member:read.value.member,members:read.value.members,directory:read.value.directory,identity:r.identity,known};
+ const logItem=opened.passon[0];logItem.history=[{text:'TEST native staff update',by:'TEST staff',at:new Date().toISOString()}];const priorFetch=globalThis.fetch;globalThis.fetch=async(url,options={})=>{const parsed=new URL(url,'https://easyman.test'),result=await call(r.actor,'team-workspace',options.method||'GET',options.body?JSON.parse(options.body):undefined,parsed.search);return Response.json(result.value,{status:result.status});};
+ try{await saveTeam(opened,staffContext,r.id);}finally{globalThis.fetch=priorFetch;}
+ const saved=(await call(r.actor,'team-workspace','GET',undefined,'?property='+f.owner)).value;assert.equal((await decode(saved.resources,r.identity,r.id)).passon[0].history[0].text,'TEST native staff update');
+ const priorSession=sql.prepare('SELECT id FROM app_sessions WHERE user_id=? AND property=? ORDER BY created_at DESC').get(r.id,f.owner);sql.prepare('UPDATE app_sessions SET revoked=1 WHERE id=?').run(priorSession.id);
+ const signedIn=await call(r.actor,'account','POST',{action:'login',email:r.email,password:r.password});assert.equal(signedIn.status,200);assert.ok(signedIn.headers.getSetCookie().some(c=>/^easyman_session_/.test(c)&&c.includes('Max-Age=0')));assert.equal((await call(r.actor,'team-workspace','GET',undefined,'?property='+f.owner)).status,200);
+ const managerGrants=profileGrants('Manager');sql.prepare('UPDATE members SET grants=? WHERE property=? AND user_id=?').run(JSON.stringify(managerGrants),f.owner,f.editor);
+ assert.equal((await call(f.editor,'team','POST',{action:'grants',propertyId:f.owner,userId:r.id,employeeId:'e1',grants:[{capability:'*',scope:{type:'property'}}]})).status,400);
+ assert.equal((await call(f.editor,'team','POST',{action:'grants',propertyId:f.owner,userId:r.id,employeeId:'e1',grants:staffGrants('e1',{schedule:true,log:true})})).status,200);
+ assert.equal((await call(f.editor,'team','POST',{action:'disable',propertyId:f.owner,userId:f.editor})).status,400);
+ assert.equal((await call(f.owner,'team','POST',{action:'disable',propertyId:f.owner,userId:r.id})).status,200);assert.ok([401,403].includes((await call(r.actor,'team-workspace','GET',undefined,'?property='+f.owner)).status));
+});
+test('password change and recovery keep the same encryption identity, rotate recovery codes and invalidate old login sessions',async()=>{
+ const r=await registeredBrowser('password-native');const login=await call('browser:second-device','account','POST',{action:'login',email:r.email,password:r.password});assert.equal(login.status,200);const unlocked=await unlockLoginKey(login.value.passwordVault,r.password);assert.equal(unlocked.publicKey.n,r.identity.publicKey.n);
+ const changed='TEST newly chosen staff passphrase 2026!';const vault=await lockLoginKey(r.identity,changed);assert.equal((await call(r.actor,'account','POST',{action:'change-password',currentPassword:r.password,password:changed,passwordVault:vault})).status,200);assert.equal((await call('browser:second-device','account')).status,401);
+ assert.equal((await call('browser:old-password','account','POST',{action:'login',email:r.email,password:r.password})).status,401);
+ const opened=await call('browser:recover','account','POST',{action:'recover-open',email:r.email,recoveryCode:r.code});assert.equal(opened.status,200);const identity=await unlockLoginKey(opened.value.recoveryVault,r.code);assert.equal(identity.publicKey.n,r.identity.publicKey.n);
+ const nextCode=randomToken(),nextPassword='TEST recovered account passphrase 2026!';assert.equal((await call('browser:recover','account','POST',{action:'recover',email:r.email,recoveryCode:r.code,password:nextPassword,passwordVault:await lockLoginKey(identity,nextPassword),newRecoveryCode:nextCode,recoveryVault:await lockLoginKey(identity,nextCode)})).status,200);assert.equal((await call(r.actor,'account')).status,401);assert.equal((await call('browser:recover','account','POST',{action:'recover-open',email:r.email,recoveryCode:r.code})).status,401);
+ const fresh=await call('browser:final-device','account','POST',{action:'login',email:r.email,password:nextPassword});assert.equal(fresh.status,200);assert.equal((await unlockLoginKey(fresh.value.passwordVault,nextPassword)).publicKey.n,r.identity.publicKey.n);
+ const before=cookies.get('browser:final-device');assert.equal((await call('browser:final-device','account','POST',{action:'logout'})).status,200);cookies.set('browser:replay',before);assert.equal((await call('browser:replay','account')).status,401);
+});
+
+

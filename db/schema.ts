@@ -2,6 +2,9 @@
 // Add Drizzle tables here when the site actually needs a database.
 // See examples/d1/db/schema.ts for an opt-in example.
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+export const authAccounts=sqliteTable('auth_accounts',{id:text('id').primaryKey(),email:text('email').notNull().unique(),displayName:text('display_name').notNull(),passwordSalt:text('password_salt').notNull(),passwordHash:text('password_hash').notNull(),passwordVault:text('password_vault').notNull(),recoveryHash:text('recovery_hash').notNull(),recoveryVault:text('recovery_vault').notNull(),credentialVersion:integer('credential_version').notNull().default(1),disabled:integer('disabled').notNull().default(0),createdAt:text('created_at').notNull()});
+export const authSessions=sqliteTable('auth_sessions',{tokenHash:text('token_hash').primaryKey(),userId:text('user_id').notNull(),credentialVersion:integer('credential_version').notNull(),expiresAt:text('expires_at').notNull(),revoked:integer('revoked').notNull().default(0)});
+export const accountRequests=sqliteTable('account_requests',{userId:text('user_id').primaryKey(),requestCode:text('request_code').notNull().unique(),email:text('email').notNull(),displayName:text('display_name').notNull(),createdAt:text('created_at').notNull()});
 export const workspaces = sqliteTable('workspaces', {
   owner: text('owner').primaryKey(),
   ciphertext: text('ciphertext').notNull(),

@@ -1,14 +1,17 @@
 import { env } from 'cloudflare:workers';
-import { getChatGPTUser } from '../../chatgpt-auth';
+import {getAccountUser} from '../../account-server';
+
 const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
-export async function GET() {
-  const user = await getChatGPTUser();
+export async function GET(request?:Request) {
+  const user = await getAccountUser(request);
+  if(user?.provider==='password')return json({error:'Use your approved property workspace.'},403);
   if (!user) return json({ error: 'Sign in to sync your workspace.' }, 401);
   const row = await env.DB!.prepare('SELECT ciphertext, iv, revision FROM workspaces WHERE owner = ?').bind(user.userId).first();
   return json({ workspace: row });
 }
 export async function PUT(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getAccountUser(request);
+  if(user?.provider==='password')return json({error:'Use your approved property workspace.'},403);
   if (!user) return json({ error: 'Sign in required.' }, 401);
   if (request.headers.get('origin') !== new URL(request.url).origin) return json({ error: 'Invalid origin.' }, 403);
   const raw = await request.text();
@@ -23,3 +26,4 @@ export async function PUT(request: Request) {
   await env.DB!.prepare('INSERT INTO audit_events (id, owner, action, timestamp) VALUES (?, ?, ?, ?)').bind(crypto.randomUUID(), user.userId, 'workspace.saved', now).run();
   return json({ revision: result.revision });
 }
+
