@@ -56,6 +56,9 @@ export function permitsResourceWrite(member:Member,record:Pick<Resource,'field'|
   if(permits(member,fields[record.field].write,record.subject,directory))return true;
   return record.field==='publication'&&record.aadVersion===3&&Array.isArray(record.publicationWeeks)&&permits(member,'Scheduling.Edit',record.subject,directory)&&record.publicationWeeks.every(week=>previous?.publicationWeeks?.includes(week));
 }
+const fieldLabels:Record<string,string>={config:'property settings',employees:'employee profiles',rooms:'rooms',reporting:'reporting lines',passon:'pass-ons',checks:'room checks',boards:'housekeeping assignments',housekeepingDays:'housekeeping day setup',schedule:'shifts',staffingWeeks:'staffing needs',availability:'availability',preferences:'scheduling preferences',employeePrivate:'private employee details',training:'training records',discipline:'discipline records',snapshots:'snapshots',scheduleArchives:'schedule history',feedback:'feedback'};
+// Explains a save in which some edits were withheld because the account may not write those record types.
+export function withheldMessage(withheld:string[]){return 'Not saved: your account does not have permission to change '+withheld.map(f=>fieldLabels[f]||f).join(', ')+'. Those changes show on this screen only and will be gone after a reload. Everything else was saved.';}
 export function profileGrants(profile:string,scope:Scope={type:'property'}):Grant[]{
   const operational=['Property.View','Employees.View','Rooms.View','ShiftLog.View','ShiftLog.Edit','ShiftLog.Create','ShiftLog.ViewArchive','ShiftLog.Handoff','RoomChecks.View','RoomChecks.Perform'];
   const manager=['Users.Manage','Scheduling.View','Scheduling.Edit','Scheduling.Publish','Availability.View','HousekeepingBoards.View','HousekeepingBoards.Assign','Training.View','Training.Edit','OperationalData.Export'];
