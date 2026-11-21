@@ -6,7 +6,7 @@ Scheduling now supports daily staffing defaults and independent weekly requireme
 
 **Take it easy, manager.** A privacy-focused hotel operations application being built for reliable daily use by hotel managers and their teams.
 
-EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. All 14 actionable original review findings and completeness checks C1/C2 are fixed and locally verified; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
+EasyMan is currently in development and testing, with fictional records and no customer properties. Its intended live-use scope remains intact. The build metadata is `1.0.0`; that number does not establish release readiness. All 14 actionable original review findings and completeness checks C1/C2 are fixed and locally verified; the older-data compatibility concern numbered 12 is withdrawn because incompatible examples can be reset. A separate November 2026 audit found four high-severity defects, now fixed and locally verified, and further medium- and low-severity findings that remain open. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Start with the current documents
 
@@ -43,7 +43,7 @@ npm run typecheck
 npm run build
 ```
 
-The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The completed corrective work passes 99 tests, type checks and the deployment build. Consult the checklist for evidence and remaining issues.
+The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The completed corrective work passes 99 tests, type checks and the deployment build. As of November 21, 2026 the suite has 134 tests; all pass, with type checks and the main and demo builds. Consult the checklist for evidence and remaining issues.
 
 ## Local database
 
