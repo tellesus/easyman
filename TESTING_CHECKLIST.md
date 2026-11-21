@@ -192,3 +192,14 @@ All original review fixes and C1/C2 are complete. The unchecked reusable checkli
 - [ ] Verify the signed-in app still requires authentication and its APIs reject anonymous/spoofed identities. Demo hosting has no storage bindings or secrets; its page makes no operational API or persistent-browser-storage calls.
 
 
+
+## November 2026 audit fixes — verification record
+
+November 21, 2026: all **134/134 tests**, TypeScript and the main/demo builds pass; `scripts/test-save.mjs` adds seven cases. Re-run with fictional data: publish and recheck validation in the demo build; sign-out, offline save with and without reload, a moved revision, a Manager-profile account and an expired staff session against a local server. Nothing was run against hosting.
+
+Not yet exercised:
+
+- [ ] Force a non-conflict batch failure on workspace save; verify a retryable error and no "reload required" message.
+- [ ] With a kept-aside copy after a moved revision, download the working copy and verify it opens with the unsaved changes.
+- [ ] Confirm and cancel **Discard unsaved changes** and the kept-aside **Discard**; verify only confirmation removes the changes.
+- [ ] As ChatGPT-sign-in staff with no browser key, open the staff workspace; verify account recovery is offered and sign-out does not clear a key.

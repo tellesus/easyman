@@ -1,5 +1,7 @@
 # EasyMan known issues
 
+November 21, 2026: a separate audit of the application at source `48e0b14` found four high-severity defects, now fixed and locally verified, and further findings that remain open. See [November 2026 audit](#november-2026-audit) at the end of this document. The October review record below is unchanged.
+
 Reviewed October 10, 2026 (America/Chicago), against the original V1 specification and the owner's subsequent refinements. Reviewed application source: `7e283d3617701c7379dc63ed47c58bb5c67fba65`. Documentation is now aligned to [CURRENT_SPEC.md](CURRENT_SPEC.md); a later documentation-only revision does not mean these code findings are fixed.
 
 The original review numbered 15 findings. **All 14 active original findings are fixed and locally verified; none remain open. Finding 12 is withdrawn as required legacy-data compatibility work.** Its number is retained for continuity. EasyMan is intended for real operational use, but there are currently no customers and all property records are fictional. Incompatible examples may be reset after a fix; the live-use scope and new-data correctness requirements remain intact. The initial documentation pass applied no behavioral fixes. The implementation batches below record all verified corrections. Twelve focused scenarios were reproduced with fictional data, actual storage handlers/encryption, or the actual UI form/callback code. Four additional findings are directly visible in the rendering/configuration paths; the two narrow-permission scenarios are grouped into one finding below. No property data, access settings, automations, or application behavior were changed by the review. Review harnesses are checkout-local and ignored by Git.
@@ -184,3 +186,40 @@ A rapid reload during the 600 ms save delay could lose the latest edit while the
 The complete suite passes **99/99 tests**, TypeScript checks and the deployment build. New focused cases cover protected full/partial coverage, feasible 8/40-hour allocation, hour/rest override acknowledgment, custom-time constraints/XLSX, real capability/scope exports, inspection details/rechecks/all filters, acknowledgment revisions and frozen snapshot rendering. An actual encrypted storage/readback test preserves custom schedule fields, inspection attendant/category, acknowledgment/history and captured owner/note details. Local browser checks saved/reloaded custom times with a deliberate weekly-limit override, separate inspection/recheck/filter history and an unrelated discipline edit retaining Acknowledged. Tests use fictional records and isolated identities; no hosted examples were reset.
 
 All original actionable findings and C1/C2 are complete. Finding 12 remains withdrawn as a requirement to preserve incompatible dummy history. This closes the reviewed work list; it is not an official release tag or a claim of real-team/device/PMS verification.
+
+## November 2026 audit
+
+Audited November 20, 2026 at source `48e0b14`; high-severity fixes merged November 21 at `d05edf8`. Findings are labeled A1–A4 to keep them apart from the October numbering.
+
+### A1. A validation error during publish, recheck or edit blanked the whole app — Fixed and locally verified
+
+Workspace changes ran inside a React state updater, so a domain validation error surfaced during render, past the caller's error handling. Changes are now computed before the state update and the message is shown in the form. Publishing validates the schedule before recording `schedule.published`. Re-run in the demo build for publish and recheck.
+
+### A2. Sign-out deleted a ChatGPT-sign-in account's only encryption key — Fixed and locally verified
+
+Password accounts keep an encrypted key vault on the server; ChatGPT-sign-in accounts do not. Sign-out now clears the browser key only for password accounts. The staff session-expired screen can start a new application session and shows account recovery when the browser key is missing. Sign-out and the expired staff session were re-run against a local server; the recovery screen for ChatGPT-sign-in staff was not exercised.
+
+### A3. Edits an account may not save were silently dropped, or blocked every later save — Fixed and locally verified
+
+`saveTeam` now uploads everything the account may write and reports the record types it withheld. Import JSON and the sample-property setup are hidden without the needed capability, which is checked again when an import is confirmed. Covered by `scripts/test-save.mjs` and a Manager-profile run against a local server.
+
+### A4. A failed or conflicting save lost the edit — Fixed in part and locally verified
+
+Outages, server errors and rate limits are retried with a growing delay, on reconnect or with **Retry now**. After a reload, changes that never reached the server are restored when the workspace is still at the revision they were based on; otherwise they are kept aside behind a banner offering a working-copy download or discard. The save endpoint returns 409 only when the revision moved and 500 for other batch failures. Offline save with and without reload and a moved revision were re-run locally. Not exercised: the server's 409/500 split, downloading the kept-aside copy and the two discard confirmations.
+
+**Still open:** the property-wide revision means another user's save still forces a reload. The edit is now kept as a downloadable copy, not merged.
+
+### Open findings from the same audit
+
+None of these are fixed. Items marked *reproduced* were run; the others were confirmed by reading the code or reported by review and not run.
+
+- **Local setup:** a fresh local database cannot create its first property through the app (*reproduced*).
+- **Access, sessions and keys:** several hardening findings covering session revocation and reset, where session and audit rows may be written, the trust placed in hosting identity headers, replacement keys, duplicate membership rows, whole-workspace re-sealing on team actions, key rotation after disabling a member, and the strength of recovery-file key derivation. Details are held back from this public register until corrected.
+- **Rooms and housekeeping:** room import accepts duplicate room numbers, after which day setup cannot complete (*reproduced*). Deactivating a room after the day is set up breaks service edits for that day (*reproduced*). Day setup can attach service to an inactive room sharing a number with an active one (*reproduced*). Zero-point rooms can all go to one attendant (*reproduced*). The room catalog cannot be edited or deactivated in the interface.
+- **Scheduling:** schedule export can say Draft for a published week (*reproduced*). A shift time inside the spring-forward gap makes generation throw (*reproduced*). Employee import accepts a malformed `preferredWeekdays`, and generation then fails (*reproduced*). The new-shift form pre-selects the first eligible employee's position.
+- **Data and operations:** migration journal entries 0006 and 0007 are out of timestamp order. Snapshots may never start for a property with an empty creation time.
+- **Interface:** the configuration editor can carry dropdown values from one item to the next. Completed pass-ons cannot be reopened.
+- **Lower severity:** inactive employees' shifts still count as coverage; no form field for per-employee maximum hours; clearing some numeric fields saves 0; Today-dashboard counts use mismatched dates; several date defaults ignore the property time zone; room-board export lists all qualified attendants; an attendant named "History" breaks the board export; coverage can round to 100% with a gap; minor wording and sort-order defects.
+- **Tooling:** `npm run lint` fails and is not part of CI.
+
+Hosted, real-team, physical-device and PMS verification remain as limited as recorded above.
