@@ -36,8 +36,8 @@ export function manualAssignmentWarnings(state:State,row:Row,ignore?:string){
   if(total>max)warnings.push(total+' scheduled hours exceeds the '+max+'-hour weekly maximum.');
   const overtime=Number(state.config.overtimeHours??40);if(total>overtime)warnings.push(total+' scheduled hours exceeds the '+overtime+'-hour overtime threshold.');
   const split=splitDaysWarning(state,row,ignore);if(split)warnings.push(split);
-  try{const zone=state.config.timezone,start=zonedInstant(row.date,shift.start,zone),end=zonedInstant(shift.end<=shift.start?days(row.date,2)[1]:row.date,shift.end,zone),minimum=Number(state.config.minRestHours??11);
-    for(const a of state.schedule.filter(a=>a.employee===row.employee&&a.id!==ignore)){const other=effectiveShift(state,a);if(!other)continue;const otherStart=zonedInstant(a.date,other.start,zone),otherEnd=zonedInstant(other.end<=other.start?days(a.date,2)[1]:a.date,other.end,zone);const rest=start>=otherEnd?(start-otherEnd)/3600000:otherStart>=end?(otherStart-end)/3600000:null;
+  try{const zone=state.config.timezone,start=zonedInstant(row.date,shift.start,zone,true),end=zonedInstant(shift.end<=shift.start?days(row.date,2)[1]:row.date,shift.end,zone,true),minimum=Number(state.config.minRestHours??11);
+    for(const a of state.schedule.filter(a=>a.employee===row.employee&&a.id!==ignore)){const other=effectiveShift(state,a);if(!other)continue;const otherStart=zonedInstant(a.date,other.start,zone,true),otherEnd=zonedInstant(other.end<=other.start?days(a.date,2)[1]:a.date,other.end,zone,true);const rest=start>=otherEnd?(start-otherEnd)/3600000:otherStart>=end?(otherStart-end)/3600000:null;
       if(rest!==null&&rest<minimum)warnings.push(`Less than ${minimum} hours between shifts: ${Number(rest.toFixed(2))} hours of rest next to ${a.date} ${other.start}–${other.end}.`);
     }
   }catch(error:any){warnings.push(error.message||'Choose valid shift times.');}

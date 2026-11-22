@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {assignmentError,days,effectiveShift,type State,type Row} from './domain';
+import {assignmentError,days,effectiveShift,friendlyDay,gapReason,type State,type Row} from './domain';
 import {saveStaffingNeeds,resetStaffingWeek,requirementsForDate,scheduleGaps,isManagerCoverage} from './staffing';
 import {manualAssignment} from './scheduling-actions';
 import AssignmentFields from './assignment-fields';
@@ -26,8 +26,8 @@ export function GapResolver({state,can,assign,close,dates=days(state.week)}:{sta
   if(!gap)return <div className="detail-body"><h3>{gaps.length?'Remaining gaps left for later':'All selected shifts are covered'}</h3><p>{gaps.length?'Your draft is preserved. Use Resolve missing shifts whenever you are ready to continue.':'Review the draft before publishing.'}</p><button className="primary" onClick={close}>Return to schedule</button></div>;
   const prior={id:'',date:gap.date,position:gap.position,shift:gap.shift};
   const eligible=state.employees.filter(e=>can('Scheduling.Edit',e.id)&&can('Availability.View',e.id)&&!assignmentError(state,e,gap.date,shift!,gap.position,state.schedule,undefined,0));
-  return <div className="detail-body"><h3>{gap.date} · {state.config.positions.find(p=>p.id===gap.position)?.name}</h3><p>{shift?.name} · {shift?.start}–{shift?.end} · <strong>{gap.missing} more {gap.missing===1?'person':'people'} needed</strong></p><p>{gaps.reduce((n,g)=>n+g.missing,0)} {gaps.reduce((n,g)=>n+g.missing,0)===1?'person':'people'} still needed on selected dates. Qualified, available employees are listed below; hour, rest and days-off warnings require your decision.</p>
-    {!eligible.length&&<p className="info-note">No employee can take this shift without violating a blocking restriction. You can arrange Manager coverage or leave it unfilled.</p>}
+  return <div className="detail-body"><h3>{friendlyDay(gap.date)} · {state.config.positions.find(p=>p.id===gap.position)?.name}</h3><p>{shift?.name} · {shift?.start}–{shift?.end} · <strong>{gap.missing} more {gap.missing===1?'person':'people'} needed</strong></p><p>{gaps.reduce((n,g)=>n+g.missing,0)} {gaps.reduce((n,g)=>n+g.missing,0)===1?'person':'people'} still needed on selected dates. Qualified, available employees are listed below; hour, rest and days-off warnings require your decision.</p>
+    {!eligible.length&&<p className="info-note">Nobody can be given this shift without breaking a rule that cannot be overridden. {gapReason(state,gap.date,gap.shift,gap.position)} You can arrange Manager coverage or leave it unfilled.</p>}
     <form key={key(gap)+':'+gap.missing} onSubmit={e=>{e.preventDefault();try{const row=manualAssignment(state,prior,new FormData(e.currentTarget),can);assign(row);setError('');}catch(error:any){setError(error.message);}}}><div className="form-grid"><AssignmentFields state={{...state,employees:eligible}} prior={{...prior,employee:eligible[0]?.id||(can('Scheduling.Edit','')?'@manager':'')}} can={can} lockedSlot/>{error&&<p className="error wide" role="alert">{error}</p>}</div><div className="button-group"><button className="primary" disabled={!eligible.length&&!can('Scheduling.Edit','')}>Assign to this shift</button><button className="secondary" type="button" onClick={()=>{setSkipped([...skipped,key(gap)]);setError('');}}>Leave unfilled for now</button></div></form>
   </div>;
 }

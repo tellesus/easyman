@@ -1,20 +1,30 @@
 import {days,monday,uid,staffingApplies,type State,type Row} from './domain';
 
 export const isManagerCoverage=(row:Row)=>row.coverage==='manager'&&row.employee==='';
-export const isOvernight=(shift:Row)=>shift.overnight===true||shift.end<=shift.start;
+// A shift that ends exactly at midnight finishes with its own day and is not overnight work.
+export const isOvernight=(shift:Row)=>shift.overnight===true||(shift.end<=shift.start&&shift.end!=='00:00');
 export function overnightCorrections(state:State,employeeId?:string){
   const current=new Intl.DateTimeFormat('en-CA',{timeZone:state.config.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   return state.schedule.filter(a=>a.date>=current&&(!employeeId||a.employee===employeeId)&&!isManagerCoverage(a)&&state.employees.find(e=>e.id===a.employee)?.overnightOK!==true).filter(a=>{const template=state.config.shifts.find(s=>s.id===a.shift);return template&&isOvernight({...template,start:a.start??template.start,end:a.end??template.end});});
 }
 export function requirementsForDate(state:State,date:string):Row[]{
   const saved=state.staffingWeeks?.find(w=>w.week===monday(date));
-  if(saved)return saved.requirements.filter((r:Row)=>r.date===date);
+  // A shift or position switched off after the week was saved is no longer needed; its saved count stays in case it is switched back on.
+  if(saved)return saved.requirements.filter((r:Row)=>r.date===date&&state.config.shifts.some(s=>s.id===r.shift&&s.active!==false)&&state.config.positions.some(p=>p.id===r.position&&p.active!==false));
   const counts=new Map<string,Row>();
   for(const rule of state.config.staffing.filter(r=>staffingApplies(r,date,state.config))){
     const key=rule.position+':'+rule.shift,prior=counts.get(key);
     counts.set(key,{id:key,date,position:rule.position,shift:rule.shift,count:Number(rule.count)+(prior?.count||0)});
   }
   return [...counts.values()];
+}
+// The sentence shown after a draft is generated. It counts people, the same way the staffing panel does.
+export function generationSummary(state:State,dates=days(state.week)):string{
+  const required=dates.flatMap(date=>requirementsForDate(state,date)).reduce((n,r)=>n+Number(r.count),0);
+  if(!required)return 'No staffing needs are set for '+(dates.length===1?'this day':'these days')+', so nothing was scheduled. Enter them under View / edit staffing needs, then generate again.';
+  const gaps=scheduleGaps(state,dates),missing=gaps.reduce((n,g)=>n+g.missing,0);
+  if(!missing)return 'Draft generated. Every required shift is covered.';
+  return Math.round((required-missing)/required*100)+'% covered. '+missing+(missing===1?' person is':' people are')+' still needed across '+gaps.length+(gaps.length===1?' shift.':' shifts.');
 }
 export function weekRequirements(state:State,week=state.week){return days(week).flatMap(date=>requirementsForDate(state,date));}
 export function ensureStaffingWeek(state:State,week=state.week):State{

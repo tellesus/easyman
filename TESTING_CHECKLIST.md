@@ -203,3 +203,15 @@ Not yet exercised:
 - [ ] With a kept-aside copy after a moved revision, download the working copy and verify it opens with the unsaved changes.
 - [ ] Confirm and cancel **Discard unsaved changes** and the kept-aside **Discard**; verify only confirmation removes the changes.
 - [ ] As ChatGPT-sign-in staff with no browser key, open the staff workspace; verify account recovery is offered and sign-out does not clear a key.
+
+## Schedule builder and housekeeping board strange cases — verification record
+
+November 21, 2026: all **153/153 tests**, TypeScript and the main/demo builds pass; `scripts/test-builders.mjs` adds 19 cases. Checked in the demo build with fictional data: the gap dialog, schedule-quality notes and generate message with nobody approved for overnight work; Rebalance and roster save with an empty roster; saving an attendant as inactive. No console errors. Nothing was run against hosting.
+
+Not yet exercised on screen:
+
+- [ ] Add a second need for a position only one multi-position employee holds; generate and verify both positions are covered.
+- [ ] Add a shift ending at 00:00 and one ending at 02:30; generate an ordinary week and the week of the spring clock change.
+- [ ] Switch a shift off after generating a week; verify its gaps disappear and return when it is switched back on.
+- [ ] Set several rooms to 0 daily points and rebalance; verify room counts stay even.
+- [ ] Import a room whose number is already in use, and an employee with an empty qualifications list; verify both are refused with a clear message.
