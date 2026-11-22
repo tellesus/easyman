@@ -43,7 +43,7 @@ npm run typecheck
 npm run build
 ```
 
-The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The completed corrective work passes 99 tests, type checks and the deployment build. As of November 21, 2026 the suite has 134 tests; all pass, with type checks and the main and demo builds. Consult the checklist for evidence and remaining issues.
+The review baseline at source `7e283d3617701c7379dc63ed47c58bb5c67fba65` passed 77 tests but missed the reviewed workflow combinations. The completed corrective work passes 99 tests, type checks and the deployment build. As of November 21, 2026 the suite has 153 tests; all pass, with type checks and the main and demo builds. Consult the checklist for evidence and remaining issues.
 
 ## Local database
 

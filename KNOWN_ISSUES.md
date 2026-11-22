@@ -215,11 +215,23 @@ None of these are fixed. Items marked *reproduced* were run; the others were con
 
 - **Local setup:** a fresh local database cannot create its first property through the app (*reproduced*).
 - **Access, sessions and keys:** several hardening findings covering session revocation and reset, where session and audit rows may be written, the trust placed in hosting identity headers, replacement keys, duplicate membership rows, whole-workspace re-sealing on team actions, key rotation after disabling a member, and the strength of recovery-file key derivation. Details are held back from this public register until corrected.
-- **Rooms and housekeeping:** room import accepts duplicate room numbers, after which day setup cannot complete (*reproduced*). Deactivating a room after the day is set up breaks service edits for that day (*reproduced*). Day setup can attach service to an inactive room sharing a number with an active one (*reproduced*). Zero-point rooms can all go to one attendant (*reproduced*). The room catalog cannot be edited or deactivated in the interface.
-- **Scheduling:** schedule export can say Draft for a published week (*reproduced*). A shift time inside the spring-forward gap makes generation throw (*reproduced*). Employee import accepts a malformed `preferredWeekdays`, and generation then fails (*reproduced*). The new-shift form pre-selects the first eligible employee's position.
+- **Rooms and housekeeping:** the room catalog cannot be edited or deactivated in the interface.
+- **Scheduling:** schedule export can say Draft for a published week (*reproduced*). Employee import still accepts a malformed `preferredWeekdays`; generation now ignores it instead of failing. The new-shift form pre-selects the first eligible employee's position.
 - **Data and operations:** migration journal entries 0006 and 0007 are out of timestamp order. Snapshots may never start for a property with an empty creation time.
 - **Interface:** the configuration editor can carry dropdown values from one item to the next. Completed pass-ons cannot be reopened.
 - **Lower severity:** inactive employees' shifts still count as coverage; no form field for per-employee maximum hours; clearing some numeric fields saves 0; Today-dashboard counts use mismatched dates; several date defaults ignore the property time zone; room-board export lists all qualified attendants; an attendant named "History" breaks the board export; coverage can round to 100% with a gap; minor wording and sort-order defects.
 - **Tooling:** `npm run lint` fails and is not part of CI.
 
 Hosted, real-team, physical-device and PMS verification remain as limited as recorded above.
+
+### Schedule builder and housekeeping board strange-case review — Fixed and locally verified
+
+Reviewed November 21, 2026 with 62 unusual cases. Neither builder produced an assignment that broke its own rules. The shortfalls below are corrected, covered by `scripts/test-builders.mjs`, and the changed messages were checked in the demo build.
+
+- **Fillable shifts reported as gaps.** When the only person who could fill a gap already held a shift someone else could work, the builder left the gap. It now hands over one or two of that person's generated shifts. Against an exhaustive search of 187 small weeks it fell short in 40 before and 4 now.
+- **Slow generation.** A 60-person week took about ten seconds and a 120-person week 84; they now take about a third of a second and just over two seconds. A 1,200-room board took eight to ten seconds and now takes well under one. Measured in Node, not in a browser.
+- **Messages.** Gap notes read "Mon, Feb 1: 1 more person needed for Overnight (Guest Service Agent). Of 7 qualified: 7 not approved for overnight shifts." The message after generating counts people, and says when no staffing needs are set. Rebalance says when nobody is working, when nothing needs cleaning and who received no rooms. Unmatched room numbers are quoted, so a stray space is visible.
+- **Unusual inputs.** A shift ending exactly at midnight is not overnight work. A shift or position switched off after a week was saved is no longer required. A shift time skipped by the spring clock change no longer stops the week. Rooms worth no points are shared by room count. A retired room no longer takes the service of a live room with the same number, or blocks edits to a day it was set up in. Imports refuse an empty qualifications list and a second active room with the same number.
+- **Deactivated attendants.** Saving an employee as inactive, or without the board position, releases the rooms they hold from today on and says how many.
+
+**Still open:** the schedule builder is a heuristic and can still miss an arrangement that needs one shift given up to gain two. A scheduler who adds a shift by hand on the spring clock-change night is no longer warned that the time does not exist.

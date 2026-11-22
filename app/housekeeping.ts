@@ -20,13 +20,22 @@ export function parseDayImport(text:string,date:string):DayImport {
     if(!services.includes(row.service))throw new Error('Entry '+(index+1)+': service must be departure, stayover or none.');
     if(row.reason!==undefined&&(typeof row.reason!=='string'||row.reason.length>300))throw new Error('Entry '+(index+1)+': keep the mapping reason under 300 characters.');
   }
-  return input;
+  // Stray spaces around a room number are a formatting difference, not a different room.
+  const tidy=(list:ImportRoom[])=>list.map(row=>({...row,roomNumber:row.roomNumber.trim()}));
+  return {...input,rooms:tidy(input.rooms),unmatched:tidy(input.unmatched)};
 }
-export function dayImportProblems(rows:ImportRoom[],state:State){
-  const problems:string[]=[],seen=new Set<string>();
+// The rooms a day's entries may refer to: the active catalog, plus rooms this day was set up with that were retired afterwards.
+export function dayRooms(state:State,date?:string):Row[]{
+  const live=state.rooms.filter(r=>r.active!==false),ids=new Set(live.map(r=>r.id)),numbers=new Set(live.map(r=>String(r.number)));
+  const frozen:Row[]=(date&&state.housekeepingDays?.find(d=>d.date===date)?.catalog)||[];
+  return [...live,...frozen.filter(r=>r.active!==false&&!ids.has(r.id)&&!numbers.has(String(r.number)))];
+}
+export function dayImportProblems(rows:ImportRoom[],state:State,date?:string){
+  const problems:string[]=[],seen=new Set<string>(),pool=dayRooms(state,date);
   rows.forEach((row,i)=>{
-    const matches=state.rooms.filter(r=>r.active!==false&&String(r.number)===row.roomNumber);
-    if(matches.length!==1)problems.push('Entry '+(i+1)+': '+(matches.length?'ambiguous room number ':'unknown room ')+row.roomNumber+'. Choose a catalog room or exclude this entry.');
+    const matches=pool.filter(r=>String(r.number)===row.roomNumber);
+    if(matches.length>1)problems.push('Entry '+(i+1)+': more than one active room is numbered "'+row.roomNumber+'". Correct the room catalog in Property settings before setting up this day.');
+    else if(!matches.length)problems.push('Entry '+(i+1)+': unknown room "'+row.roomNumber+'". Choose a catalog room or exclude this entry.');
     if(seen.has(row.roomNumber))problems.push('Entry '+(i+1)+': duplicate or conflicting service for room '+row.roomNumber+'. Keep one entry.');
     seen.add(row.roomNumber);
     if(!services.includes(row.service))problems.push('Entry '+(i+1)+': choose a valid service.');
@@ -53,21 +62,21 @@ export function housekeepingDay(state:State,date:string):State {
   return {...state,rooms,boards,housekeepingDate:date};
 }
 export function importEffects(state:State,date:string,rows:ImportRoom[]){
-  const view=housekeepingDay(state,date),selected=new Set(rows.filter(r=>r.service!=='none').map(r=>state.rooms.find(room=>String(room.number)===r.roomNumber)?.id));
+  const view=housekeepingDay(state,date),selected=new Set(rows.filter(r=>r.service!=='none').map(r=>dayRooms(state,date).find(room=>String(room.number)===r.roomNumber)?.id));
   return view.boards.filter(b=>!selected.has(b.room)&&(b.employee||b.locked||b.status==='Clean')).map(b=>({number:view.rooms.find(r=>r.id===b.room)?.number||b.room,clean:b.status==='Clean',locked:!!b.locked}));
 }
 export function applyHousekeepingDay(state:State,date:string,rows:ImportRoom[]):State {
   if(!validDay(date))throw new Error('Choose a valid day.');
-  const issues=dayImportProblems(rows,state);if(issues.length)throw new Error(issues[0]);
+  const issues=dayImportProblems(rows,state,date);if(issues.length)throw new Error(issues[0]);
   if(!state.housekeepingDays?.length&&state.boards.some(b=>!b.date)&&date!==today(state.config.timezone)){
     // Preparing tomorrow must not hide the previously undated board for today.
     const legacyRows=state.rooms.filter(r=>r.active!==false).map(r=>({roomNumber:String(r.number),service:(r.flag==='Stayover'?'stayover':'departure') as Service}));
     return applyHousekeepingDay(applyHousekeepingDay(state,today(state.config.timezone),legacyRows),date,rows);
   }
-  const previous=state.housekeepingDays?.find(d=>d.date===date),view=housekeepingDay(state,date);
-  const items=rows.map(r=>({room:state.rooms.find(room=>String(room.number)===r.roomNumber)!.id,service:r.service})).filter(r=>r.service!=='none').sort((a,b)=>a.room.localeCompare(b.room));
+  const previous=state.housekeepingDays?.find(d=>d.date===date),view=housekeepingDay(state,date),pool=dayRooms(state,date);
+  const items=rows.map(r=>({room:pool.find(room=>String(room.number)===r.roomNumber)!.id,service:r.service})).filter(r=>r.service!=='none').sort((a,b)=>a.room.localeCompare(b.room));
   if(previous&&JSON.stringify(previous.items)===JSON.stringify(items))return state;
-  const plan={...previous,id:date,date,items,catalog:structuredClone(state.rooms.filter(r=>r.active!==false)),updatedAt:new Date().toISOString()};
+  const plan={...previous,id:date,date,items,catalog:structuredClone(pool.filter(r=>state.rooms.some(x=>x.id===r.id&&x.active!==false)||items.some(i=>i.room===r.id))),updatedAt:new Date().toISOString()};
   const selected=new Map(items.map(i=>[i.room,i.service]));
   const tasks:Row[]=view.boards.map(b=>{const oldFlag=view.rooms.find(r=>r.id===b.room)?.flag;const flagOverride=b.flagOverride||(!b.date&&['DND','Early arrival'].includes(oldFlag)?oldFlag:'');return {...b,date,flagOverride,active:selected.has(b.room)&&flagOverride!=='DND',service:selected.get(b.room)||'none'};});
   for(const item of items)if(!tasks.some(b=>b.room===item.room))tasks.push({id:uid(),date,room:item.room,service:item.service,employee:'',active:true,locked:false,status:'To clean'} as any);
@@ -95,6 +104,22 @@ export function rebalanceDay(state:State,date:string):State {
   const view=housekeepingDay(state,date),ids=dailyAttendantIds(state,date),balanced=balanceBoard({...view,employees:qualifiedAttendants(state).filter(e=>ids.includes(e.id))});
   const current=new Set(balanced.map(b=>b.room));
   return {...state,boards:[...state.boards.filter(b=>!view.boards.includes(b)),...balanced.map(b=>({...b,date,service:view.rooms.find(r=>r.id===b.room)?.service})),...view.boards.filter(b=>!current.has(b.room)).map(b=>view.rooms.some(r=>r.id===b.room&&r.service!=='none'&&r.flag!=='DND')?{...b,date,employee:'',locked:false,active:true}:{...b,date,active:false})]};
+}
+// The sentence shown after Rebalance: what was done, and anything the manager would otherwise have to notice alone.
+export function rebalanceSummary(state:State,date:string):string{
+  const view=housekeepingDay(state,date),ids=dailyAttendantIds(state,date),rooms=view.rooms.filter(r=>r.service!=='none'&&r.flag!=='DND');
+  if(!rooms.length)return 'No rooms need cleaning on this day, so there is nothing to assign.';
+  const count=(n:number)=>n+(n===1?' room':' rooms');
+  if(!ids.length)return 'Nobody is marked as working, so '+(rooms.length===1?'the 1 room stays':'all '+rooms.length+' rooms stay')+' unassigned. Choose who is working under Working today, then rebalance.';
+  const holder=new Map(view.boards.filter(b=>b.active!==false&&b.employee).map(b=>[b.room,b.employee])),assigned=rooms.filter(r=>holder.has(r.id)),busy=new Set(assigned.map(r=>holder.get(r.id)));
+  const idle=ids.filter(id=>!busy.has(id)).map(id=>state.employees.find(e=>e.id===id)?.name||'An attendant');
+  return count(assigned.length)+' balanced across '+busy.size+(busy.size===1?' attendant':' attendants')+'. Rooms kept with attendants were preserved.'+(idle.length?' '+idle.join(', ')+(idle.length===1?' has':' have')+' no rooms.':'')+(assigned.length<rooms.length?' '+count(rooms.length-assigned.length)+' still unassigned.':'');
+}
+// Rooms held by one employee who can no longer work the board (made inactive, or no longer qualified) go back to unassigned from today on.
+// Only that employee's rooms are touched: an account that cannot see every employee record must not release anyone else's.
+export function releaseUnqualifiedAttendants(state:State,employeeId:string,from=today(state.config.timezone)):{state:State;released:number}{
+  const stale=(b:Row)=>b.employee===employeeId&&!qualifiedAttendants(state).some(e=>e.id===employeeId)&&(!b.date||b.date>=from),released=state.boards.filter(stale).length;
+  return released?{released,state:{...state,boards:state.boards.map(b=>stale(b)?{...b,employee:'',locked:false}:b)}}:{released,state};
 }
 export function applyDaySetup(state:State,date:string,rows:ImportRoom[],balanceAssignments=!state.housekeepingDays?.some(d=>d.date===date),attendantIds?:string[]):State {
   let next=applyHousekeepingDay(state,date,rows);
